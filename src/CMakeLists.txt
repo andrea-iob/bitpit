@@ -81,7 +81,7 @@ set_target_properties(${BITPIT_LIBRARY} PROPERTIES POSITION_INDEPENDENT_CODE ${P
 set_target_properties(${BITPIT_LIBRARY} PROPERTIES VERSION "${BITPIT_VERSION}"
                                                  SOVERSION  "${BITPIT_MAJOR_VERSION}")
 
-install(TARGETS ${BITPIT_LIBRARY} DESTINATION lib)
+install(TARGETS ${BITPIT_LIBRARY} DESTINATION lib OPTIONAL)
 
 # Definitions
 set(BITPIT_DEFINITIONS ${MODULE_DEFINITIONS} CACHE INTERNAL "Pre-processor definitions needed by the Base Library" FORCE)

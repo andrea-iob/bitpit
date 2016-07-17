@@ -45,7 +45,7 @@ if (NOT "${IO_SOURCES}" STREQUAL "")
     add_library(IO_TARGET_OBJECT OBJECT ${IO_SOURCES})
 endif ()
 
-install(FILES ${IO_HEADERS} DESTINATION include/${CMAKE_PROJECT_NAME})
+install(FILES ${IO_HEADERS} DESTINATION include/${CMAKE_PROJECT_NAME} OPTIONAL)
 
 # Definitions
 set(IO_DEFINITIONS_DESCRIPTION "Pre-processor definitions needed by IO Library")

@@ -74,7 +74,7 @@ if(BUILD_EXAMPLES)
 
 		add_executable(${EXAMPLE_NAME} "${EXAMPLE_SOURCES}")
 		target_link_libraries(${EXAMPLE_NAME} ${BITPIT_LIBRARY})
-		install(TARGETS ${EXAMPLE_NAME} DESTINATION doc/${CMAKE_PROJECT_NAME}-${BITPIT_VERSION}/examples)
+		install(TARGETS ${EXAMPLE_NAME} DESTINATION doc/${CMAKE_PROJECT_NAME}-${BITPIT_VERSION}/examples OPTIONAL)
 	endforeach()
 
 	add_custom_target(examples DEPENDS ${EXAMPLE_LIST})

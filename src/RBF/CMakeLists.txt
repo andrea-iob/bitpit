@@ -45,7 +45,7 @@ if (NOT "${RBF_SOURCES}" STREQUAL "")
     add_library(RBF_TARGET_OBJECT OBJECT ${RBF_SOURCES})
 endif ()
 
-install(FILES ${RBF_HEADERS} DESTINATION include/${CMAKE_PROJECT_NAME})
+install(FILES ${RBF_HEADERS} DESTINATION include/${CMAKE_PROJECT_NAME} OPTIONAL)
 
 # Definitions
 set(RBF_DEFINITIONS_DESCRIPTION "Pre-processor definitions needed by RBF Library")

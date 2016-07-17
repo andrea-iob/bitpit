@@ -29,6 +29,8 @@ cmake_minimum_required(VERSION 2.8)
 
 project("bitpit")
 
+set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY false)
+
 #------------------------------------------------------------------------------------#
 # Variables visible to the user
 #------------------------------------------------------------------------------------#
