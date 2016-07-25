@@ -110,7 +110,7 @@ private:
 	bitpit::CollapsedVector2D<long> m_interfaces;
 	bitpit::CollapsedVector2D<long> m_adjacencies;
 
-	void _initialize(bool interior, bool storeNeighbourhood);
+	void _initialize(bool interior, bool initializeNeighbourhood, bool storeNeighbourhood);
 
 };
 
