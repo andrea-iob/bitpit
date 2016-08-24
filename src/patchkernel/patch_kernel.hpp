@@ -89,7 +89,7 @@ public:
 
 	virtual ~PatchKernel();
 
-	void reset();
+	virtual void reset();
 	void resetVertices();
 	void resetCells();
 	void resetInterfaces();
