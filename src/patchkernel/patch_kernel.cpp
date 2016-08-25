@@ -53,7 +53,7 @@ namespace bitpit {
 	Creates a new generator.
 */
 IndexGenerator::IndexGenerator()
-	: m_id(-1)
+	: m_latest(-1), m_highest(-1)
 {
 
 }
@@ -68,27 +68,37 @@ IndexGenerator::IndexGenerator()
 */
 long IndexGenerator::generateId()
 {
-	// If the trash is empty generate a new id
+	// If the trash is empty generate a new id otherwise recycle the first id
+	// in the trash.
 	if (m_trash.empty()) {
-		assert(m_id < std::numeric_limits<long>::max());
-		return ++m_id;
+		assert(m_highest < std::numeric_limits<long>::max());
+		m_latest = ++m_highest;
+	} else {
+		m_latest = m_trash.front();
+		m_trash.pop_front();
 	}
 
-	// If there are ids in the trash recycle te first id in the list
-	long id = m_trash.front();
-	m_trash.pop_front();
-
-	return id;
+	return m_latest;
 }
 
 /*!
-	Gets the last assigned id.
+	Gets the latest assigned id.
 
-	\return The last assigned index.
+	\return The latest assigned index.
 */
-long IndexGenerator::getLastId()
+long IndexGenerator::getLatestId()
 {
-	return m_id;
+	return m_latest;
+}
+
+/*!
+	Gets the highest assigned id.
+
+	\return The highest assigned index.
+*/
+long IndexGenerator::getHighestId()
+{
+	return m_highest;
 }
 
 /*!
@@ -101,6 +111,12 @@ long IndexGenerator::getLastId()
 void IndexGenerator::trashId(const long &id)
 {
 	m_trash.push_back(id);
+
+	// We only keep track of the latest assigned id, if we trash that id we
+	// have no information of the previous assigned id.
+	if (id == m_latest) {
+		m_latest = -1;
+	}
 }
 
 /*!
@@ -108,7 +124,8 @@ void IndexGenerator::trashId(const long &id)
 */
 void IndexGenerator::reset()
 {
-	m_id = -1;
+	m_latest  = -1;
+	m_highest = -1;
 	m_trash.clear();
 }
 
