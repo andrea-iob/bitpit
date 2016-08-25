@@ -52,6 +52,7 @@ public:
 	long generateId();
 	long getLatestId();
 	long getHighestId();
+	bool isIdAssigned(long id);
 	void trashId(const long &id);
 	void reset();
 
