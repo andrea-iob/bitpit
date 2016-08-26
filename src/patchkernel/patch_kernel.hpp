@@ -72,10 +72,6 @@ public:
 	typedef PiercedVector<Cell>::iterator CellIterator;
 	typedef PiercedVector<Interface>::iterator InterfaceIterator;
 
-	PatchKernel(bool expert);
-	PatchKernel(const int &dimension, bool expert);
-	PatchKernel(const int &id, const int &dimension, bool expert);
-
 	virtual ~PatchKernel();
 
 	virtual void reset();
@@ -374,6 +370,10 @@ protected:
 	long m_firstGhostId;
 
 	VTKUnstructuredGrid m_vtk ;
+
+	PatchKernel(bool expert);
+	PatchKernel(const int &dimension, bool expert);
+	PatchKernel(const int &id, const int &dimension, bool expert);
 
 	void clearBoundingBox();
 	bool isBoundingBoxFrozen() const;
