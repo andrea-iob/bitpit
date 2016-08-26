@@ -27,6 +27,7 @@
 
 #include <cstddef>
 #include <deque>
+#include <iostream>
 #include <memory>
 #if BITPIT_ENABLE_MPI==1
 #	include <mpi.h>
@@ -241,6 +242,9 @@ public:
 
 	void flushData(std::fstream &stream, std::string name, VTKFormat format );
 
+	void dump(std::ostream &stream);
+	void restore(std::istream &stream, bool reregister = false);
+
 #if BITPIT_ENABLE_MPI==1
 	virtual void setCommunicator(MPI_Comm communicator);
 	void freeCommunicator();
@@ -391,12 +395,17 @@ protected:
 	virtual void _setTol(double tolerance);
 	virtual void _resetTol();
 
+	virtual void _dump(std::ostream &stream) = 0;
+	virtual void _restore(std::istream &stream) = 0;
+
 	virtual std::vector<long> _findCellFaceNeighs(const long &id, const int &face, const std::vector<long> &blackList = std::vector<long>()) const;
 	virtual std::vector<long> _findCellEdgeNeighs(const long &id, const int &edge, const std::vector<long> &blackList = std::vector<long>()) const;
 	virtual std::vector<long> _findCellVertexNeighs(const long &id, const int &vertex, const std::vector<long> &blackList = std::vector<long>()) const;
 
 	void setAdaptionDirty(bool dirty);
 	void setExpert(bool expert);
+
+	virtual int getBinaryArchiveVersion();
 
 #if BITPIT_ENABLE_MPI==1
 	virtual const std::vector<adaption::Info> _balancePartition(bool trackChanges);

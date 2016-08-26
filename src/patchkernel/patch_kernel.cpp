@@ -489,6 +489,16 @@ void PatchKernel::setExpert(bool expert)
 }
 
 /*!
+	Gets the version of the binary archive.
+
+	\result The version of the binary archive.
+*/
+int PatchKernel::getBinaryArchiveVersion()
+{
+	return 1;
+}
+
+/*!
 	Checks if the expert mode is enabled.
 
 	When expert mode is enabled, it will be possible to change the
@@ -3692,6 +3702,93 @@ void PatchKernel::flushData(std::fstream &stream, std::string name, VTKFormat fo
 		}
 #endif
 	}
+}
+
+/*!
+ *  Write the patch to the specified stream.
+ *
+ *  \param stream is the stream to write to
+ */
+void PatchKernel::dump(std::ostream &stream)
+{
+	// Version
+	binary::write(stream, getBinaryArchiveVersion());
+
+	// Generic information
+	binary::write(stream, m_id);
+	binary::write(stream, m_dimension);
+	binary::write(stream, m_vtk.getName());
+
+	// Specific dump
+	_dump(stream);
+
+	// Geometric tolerance
+	binary::write(stream, (int) m_hasCustomTolerance);
+	if (m_hasCustomTolerance) {
+		binary::write(stream, m_tolerance);
+	}
+
+	// Index generators
+	m_vertexIdGenerator.dump(stream);
+	m_cellIdGenerator.dump(stream);
+	m_interfaceIdGenerator.dump(stream);
+}
+
+/*!
+ *  Restore the patch from the specified stream.
+ *
+ *  \param stream is the stream to read from
+ *  \param reregister is true the patch will be unregistered and then
+ *  registered again using the id found in the binary archive
+ */
+void PatchKernel::restore(std::istream &stream, bool reregister)
+{
+	// Reset the patch
+	reset();
+
+	// Version
+	int version;
+	binary::read(stream, version);
+	if (version != getBinaryArchiveVersion()) {
+		throw std::runtime_error ("The version of the file does not match the required version");
+	}
+
+	// Id
+	int id;
+	binary::read(stream, id);
+	if (reregister) {
+		patch::manager().unregisterPatch(this);
+		patch::manager().registerPatch(this, id);
+	}
+
+	// Dimension
+	int dimension;
+	binary::read(stream, dimension);
+	setDimension(dimension);
+
+	// Name
+	std::string name;
+	binary::read(stream, name);
+	m_vtk.setName(name);
+
+	// Specific restore
+	_restore(stream);
+
+	// Geometric tolerance
+	int hasCustomTolerance;
+	binary::read(stream, hasCustomTolerance);
+	if (hasCustomTolerance) {
+		double tolerance;
+		binary::read(stream, tolerance);
+		setTol(tolerance);
+	} else {
+		resetTol();
+	}
+
+	// Index generators
+	m_vertexIdGenerator.restore(stream);
+	m_cellIdGenerator.restore(stream);
+	m_interfaceIdGenerator.restore(stream);
 }
 
 /*!
