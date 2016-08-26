@@ -65,6 +65,8 @@ class UnaryPredicate {
 
 class PatchKernel : public VTKBaseStreamer {
 
+friend class PatchManager;
+
 public:
 	typedef PiercedVector<Vertex>::iterator VertexIterator;
 	typedef PiercedVector<Cell>::iterator CellIterator;

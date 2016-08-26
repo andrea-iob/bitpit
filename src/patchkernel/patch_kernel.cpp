@@ -33,6 +33,7 @@
 #include "bitpit_SA.hpp"
 
 #include "patch_kernel.hpp"
+#include "patch_manager.hpp"
 #include "utils.hpp"
 
 namespace bitpit {
@@ -68,7 +69,10 @@ PatchKernel::PatchKernel(const int &id, const int &dimension, bool expert)
 	  , m_communicator(MPI_COMM_NULL)
 #endif
 {
-	setId(id) ;
+	// Register the patch
+	patch::manager().registerPatch(this, id);
+
+	// Set the dimension
 	setDimension(dimension);
 
 	// Initialize the geometrical tolerance to a default value
@@ -115,6 +119,8 @@ PatchKernel::~PatchKernel()
 #if BITPIT_ENABLE_MPI==1
 	freeCommunicator();
 #endif
+
+	patch::manager().unregisterPatch(this);
 }
 
 /*!
