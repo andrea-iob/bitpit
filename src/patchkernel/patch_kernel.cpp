@@ -545,6 +545,11 @@ void PatchKernel::setDimension(int dimension)
 		reset();
 	}
 
+	// Check if the dimension is valid
+	if (dimension <= 0 || dimension > 3) {
+		throw std::runtime_error ("The dimension of the patch has an invalid value");
+	}
+
 	// Set the dimension
 	m_dimension = dimension;
 }
