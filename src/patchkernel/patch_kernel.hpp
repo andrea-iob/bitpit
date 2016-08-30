@@ -75,6 +75,8 @@ public:
 
 	virtual ~PatchKernel();
 
+	virtual bool validate(bool exceptions = true) const;
+
 	virtual void reset();
 	void resetVertices();
 	void resetCells();

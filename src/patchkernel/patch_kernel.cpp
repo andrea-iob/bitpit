@@ -265,6 +265,29 @@ void PatchKernel::enableCellBalancing(const long &id, bool enabled)
 }
 
 /*!
+	Check if the patch is valid
+
+	\param exceptions if set to true the function will throw an exception
+	when the patch is not valid, otherwise it will return false.
+
+	\return Returns true if tha patch is valid, it will return false or
+	throw an excepion otherwise.
+*/
+bool PatchKernel::validate(bool exceptions) const
+{
+	int dimension = getDimension();
+	if (dimension <= 0 || dimension > 3) {
+		if (exceptions) {
+			throw std::runtime_error ("The dimension of the patch has an invalid value");
+		} else {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+/*!
 	Resest the patch.
 */
 void PatchKernel::reset()
