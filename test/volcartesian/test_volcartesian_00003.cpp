@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 	log::manager().initialize(log::COMBINED);
 	log::cout() << "Testing dump/restore of a Cartesian patch" << std::endl;
 
-	std::array<double, 3> origin = {{-10., -10., -10.}};
+	const std::array<double, 3> origin = {{-10., -10., -10.}};
 	double length = 20;
 	double dh = 0.5;
 
@@ -58,7 +58,11 @@ int main(int argc, char *argv[]) {
 	// Create the patch
 	log::cout() << "Creating 2D patch..." << std::endl;
 
-	VolCartesian *patch_2D = new VolCartesian(0, 2, origin, length, dh);
+	log::cout() << "PATCH_VOLCARTESIAN " << PATCH_VOLCARTESIAN << std::endl;
+
+// 	VolCartesian *patch_2D = new VolCartesian(0, 2, origin, length, dh);
+	VolCartesian *patch_2D = dynamic_cast<VolCartesian *>(patch::manager().create<const int &, const int &,
+		const std::array<double, 3> &, double, double>(PATCH_VOLCARTESIAN, 0, 2, origin, length, dh));
 	patch_2D->getVTK().setName("cartesian_uniform_patch_2D");
 	patch_2D->setMemoryMode(VolCartesian::MEMORY_NORMAL);
 

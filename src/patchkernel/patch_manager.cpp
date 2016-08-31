@@ -60,6 +60,18 @@ PatchManager & PatchManager::manager()
 }
 
 /*!
+    Generates an id for a patch type.
+
+    \result An id to be used for a patch type
+*/
+int PatchManager::generateTypeId() const
+{
+	static int id = 0;
+
+	return id++;
+}
+
+/*!
 	Registers a patch in the manager
 
 	\param patch is a pointer to the patch to be registered

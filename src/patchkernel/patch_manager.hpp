@@ -30,6 +30,10 @@
 #include <unordered_map>
 
 #include "index_generator.hpp"
+#include "patch_factory.hpp"
+
+#define PATCH_ASSIGN_TYPE_ID(name, value) \
+const int PATCH_##name = value;
 
 namespace bitpit {
 
@@ -42,11 +46,16 @@ public:
 
     static PatchManager & manager();
 
+	int generateTypeId() const;
+
 	void dump(std::ostream &stream);
 	void restore(std::istream &stream);
 
 	void dumpAll(std::ostream &stream);
 	void restoreAll(std::istream &stream);
+
+	template<typename ...Args>
+	PatchKernel * create(int id, Args...args);
 
 private:
     static std::unique_ptr<PatchManager> m_manager;
@@ -74,8 +83,13 @@ namespace patch {
     // Generic global functions
     PatchManager & manager();
 
+	template<typename ...Args>
+	PatchKernel * create(int id, Args...args);
+
 }
 
 }
+
+#include "patch_manager.tpp"
 
 #endif

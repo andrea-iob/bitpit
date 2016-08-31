@@ -54,7 +54,7 @@ public:
 			   double length, int nCells1D);
 	VolCartesian(const int &id, const int &dimension, const std::array<double, 3> &origin,
 			   double length, double dh);
-	VolCartesian(std::istream stream);
+	VolCartesian(std::istream &stream);
 
 	void reset();
 
@@ -177,6 +177,26 @@ private:
 	void addInterfacesDirection(const int &direction);
 
 };
+
+// Register patch costructors
+PATCH_ASSIGN_TYPE_ID(VOLCARTESIAN, 0);
+
+REGISTER_PATCH_TYPE(PATCH_VOLCARTESIAN, 0, VolCartesian);
+
+REGISTER_PATCH_TYPE(PATCH_VOLCARTESIAN, 1, VolCartesian,
+                    const int &, const int &, const std::array<double, 3> &,
+                    const std::array<double, 3> &, const std::array<int, 3> &);
+
+REGISTER_PATCH_TYPE(PATCH_VOLCARTESIAN, 2, VolCartesian,
+                    const int &, const int &, const std::array<double, 3> &,
+	                double, int);
+
+REGISTER_PATCH_TYPE(PATCH_VOLCARTESIAN, 3, VolCartesian,
+                    const int &, const int &, const std::array<double, 3> &,
+	                double, double);
+
+REGISTER_PATCH_TYPE(PATCH_VOLCARTESIAN, 4, VolCartesian,
+                    std::istream &);
 
 }
 
