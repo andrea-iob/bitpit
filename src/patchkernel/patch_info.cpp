@@ -89,6 +89,146 @@ void PatchInfo::update()
 	extract(m_patch);
 }
 
+/*!
+	\ingroup patchkernel
+	\class PatchTopologyInfo
+
+	\brief Topology information about the patch.
+*/
+
+/*!
+	Creates a new info.
+
+	\param patch is patch from which the informations will be extracted
+*/
+PatchTopologyInfo::PatchTopologyInfo(PatchKernel const *patch)
+{
+	reset();
+
+	m_global = false;
+
+	extract(patch);
+}
+
+#if BITPIT_ENABLE_MPI==1
+/*!
+	Creates a new info.
+
+	\param patch is patch from which the informations will be extracted
+	\param global if set to true global information will be extracted
+*/
+PatchTopologyInfo::PatchTopologyInfo(PatchKernel const *patch, bool global)
+{
+	reset();
+
+	m_global = global;
+
+	extract(patch);
+}
+#endif
+
+/*!
+	Internal function to reset the information.
+*/
+void PatchTopologyInfo::_reset()
+{
+	m_nVertices       = 0;
+	m_nOrphanVertices = 0;
+	m_nFreeVertices   = 0;
+
+	m_nFaces     = 0;
+	m_nFreeFaces = 0;
+
+	m_nCells       = 0;
+	m_nOrphanCells = 0;
+	m_nFreeCells   = 0;
+}
+
+/*!
+	Internal function to extract the topology information from the patch.
+
+	\param patch is patch from which the informations will be extracted
+*/
+void PatchTopologyInfo::_extract(PatchKernel const *patch)
+{
+	// Extract local information
+	m_nVertices       = m_patch->getVertexCount();
+	m_nOrphanVertices = m_patch->countOrphanVertices();
+	m_nFreeVertices   = m_patch->countFreeVertices();
+
+	m_nFaces     = m_patch->countFaces();
+	m_nFreeFaces = m_patch->countFreeFaces();
+
+	m_nCells       = m_patch->getCellCount();
+	m_nOrphanCells = m_patch->countOrphanCells();
+	m_nFreeCells   = m_patch->countFreeCells();
+
+	if (!m_global || patch->getProcessorCount() <= 1) {
+		return;
+	}
+
+	// Remove ghost data
+	m_nCells -= m_patch->getGhostCount();
+	for (auto cellItr = m_patch->ghostConstBegin(); cellItr != m_patch->ghostConstEnd(); ++cellItr) {
+	}
+
+	// Exchange data
+	MPI_Comm communicator = m_patch->getCommunicator();
+
+	long nLocalVertices = m_nVertices;
+	MPI_Allreduce(&nLocalVertices, &m_nVertices, 1, MPI_LONG, MPI_SUM, communicator);
+
+	long nOrphanVertices = m_nOrphanVertices;
+	MPI_Allreduce(&nOrphanVertices, &m_nOrphanVertices, 1, MPI_LONG, MPI_SUM, communicator);
+
+	long nFreeVertices = m_nFreeVertices;
+	MPI_Allreduce(&nFreeVertices, &m_nFreeVertices, 1, MPI_LONG, MPI_SUM, communicator);
+
+	long nLocalFaces = m_nFaces;
+	MPI_Allreduce(&nLocalFaces, &m_nFaces, 1, MPI_LONG, MPI_SUM, communicator);
+
+	long nLocalFreeFaces = m_nFreeFaces;
+	MPI_Allreduce(&nLocalFreeFaces, &m_nFreeFaces, 1, MPI_LONG, MPI_SUM, communicator);
+
+	long nLocalCells = m_nCells;
+	MPI_Allreduce(&nLocalCells, &m_nCells, 1, MPI_LONG, MPI_SUM, communicator);
+
+	long nLocalOrphanCells = m_nOrphanCells;
+	MPI_Allreduce(&nLocalOrphanCells, &m_nOrphanCells, 1, MPI_LONG, MPI_SUM, communicator);
+
+	long nLocalFreeCells = m_nFreeCells;
+	MPI_Allreduce(&nLocalFreeCells, &m_nFreeCells, 1, MPI_LONG, MPI_SUM, communicator);
+}
+
+/*!
+	Display information.
+
+	\param[in,out] out output stream
+	\param[in] padding (default = 0) number of leading spaces for
+	formatted output
+*/
+void PatchTopologyInfo::display(std::ostream &out, unsigned int padding) const
+{
+	std::string indent = std::string(padding, ' ');
+
+	// Vertex info
+	out << indent<< "Vertices ..." << std::endl;
+	out << indent<< "  - n. vertices .......... " << m_nVertices       << std::endl;
+	out << indent<< "  - n. orphan vertices ... " << m_nOrphanVertices << std::endl;
+	out << indent<< "  - n. free vertices ..... " << m_nFreeVertices   << std::endl;
+
+	// Face info
+	out << indent<< "Faces ..." << std::endl;
+	out << indent<< "  - n. faces ............. " << m_nFaces          << std::endl;
+	out << indent<< "  - n. free faces ........ " << m_nFreeCells      << std::endl;
+
+	// Cell info
+	out << indent<< "Cells ..." << std::endl;
+	out << indent<< "  - n. cells ............. " << m_nCells          << std::endl;
+	out << indent<< "  - n. orphan cells ...... " << m_nOrphanCells    << std::endl;
+	out << indent<< "  - n. free cells ........ " << m_nFreeCells      << std::endl;
+}
+
 #if BITPIT_ENABLE_MPI==1
 /*!
 	\ingroup patchkernel

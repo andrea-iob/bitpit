@@ -48,6 +48,37 @@ protected:
 
 	virtual void _reset() = 0;
 	virtual void _extract(PatchKernel const *patch) = 0;
+
+};
+
+class PatchTopologyInfo : public PatchInfo {
+
+public:
+	PatchTopologyInfo(PatchKernel const *patch = nullptr);
+#if BITPIT_ENABLE_MPI==1
+	PatchTopologyInfo(PatchKernel const *patch, bool global);
+#endif
+
+	void display(std::ostream &out, unsigned int padding = 0) const;
+
+protected:
+	void _reset();
+	void _extract(PatchKernel const *patch);
+
+private:
+	bool m_global;
+
+	long m_nVertices;
+	long m_nOrphanVertices;
+	long m_nFreeVertices;
+
+	long m_nFaces;
+	long m_nFreeFaces;
+
+	long m_nCells;
+	long m_nOrphanCells;
+	long m_nFreeCells;
+
 };
 
 #if BITPIT_ENABLE_MPI==1
