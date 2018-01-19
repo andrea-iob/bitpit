@@ -492,6 +492,18 @@ if (${_BLAS_index} GREATER -1)
 endif()
 unset(_BLAS_index)
 
+list(FIND EXTERNAL_DEPS "CBLAS" _CBLAS_index)
+if (${_CBLAS_index} GREATER -1)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/CBLAS/cmake")
+
+    find_package(CBLAS REQUIRED)
+
+    list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "CBLAS")
+    list (APPEND BITPIT_EXTERNAL_LIBRARIES "${CBLAS_LIBRARIES}")
+    list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${CBLAS_INCLUDE_DIRS}")
+endif()
+unset(_CBLAS_index)
+
 list(FIND EXTERNAL_DEPS "LAPACK" _LAPACK_index)
 if (${_LAPACK_index} GREATER -1)
     find_package(LAPACK REQUIRED)
