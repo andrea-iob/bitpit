@@ -4622,10 +4622,10 @@ namespace bitpit {
                         }
                         else{
                             nofElementsFromPreviousToSuccessive = newPartitionRangeGlobalidx[p] - globalFirstTail + 1;
+                            uint32_t endOctants = ft + nofElementsFromPreviousToSuccessive - 1;
                             std::size_t buffSize = (std::size_t)nofElementsFromPreviousToSuccessive * (std::size_t)Octant::getBinarySize();
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
-                            uint32_t endOctants = ft + nofElementsFromPreviousToSuccessive - 1;
 
                             for(uint32_t i = ft; i <= endOctants; ++i ){
                                 sendBuffer << m_octree.m_octants[i];
