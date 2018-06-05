@@ -299,6 +299,88 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> * userData, uint32_t* partiti
             --newPartitionRangeGlobalidx[p];
         }
 
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+        // Questa parte di codice potrebbe avere dei problemi di
+        // overflow, a variabili int32_t vengono assegnati valori
+        // uint32_t, inoltre si usa un int64_t per gli indice globali.
+        // Il fatto di usare interi con segno è perchè si voule
+        // gestire i casi in cui non c'è coda/testa (usando -1 e
+        // nOctants + 1). Questo però dà problemi sia per i numeri
+        // negativi sia per un possibile overflow nel calcolo di
+        // (nOctants + 1).
+        //
+        // Io calcolerei solo headOffset e tailOffset (che sono sicuramente
+        // uint32_t) e gestirei a parte i casi speciali headOffset == 0
+        // e tailOffset == 0.
+        //
+        // Questo cidce commentato, assolutamente non testato, può essere
+        // un punto di partenza.
+//
+//         // Compute head offset
+//         uint32_t headOffset;
+//         if (m_rank == 0) {
+//             headOffset = 0;
+//         } else if (newPartitionRangeGlobalidx[m_rank-1] == m_partitionRangeGlobalIdx[m_rank-1]) {
+//             headOffset = 0;
+//         } else {
+//             headOffset = newPartitionRangeGlobalidx[m_rank-1] - m_partitionRangeGlobalIdx[m_rank-1];
+//         }
+//
+//         // Compute tail ffset
+//         uint32_t tailOffset;
+//         if (m_rank == m_nproc - 1) {
+//             tailOffset = 0;
+//         } else if (m_rank == 0) {
+//             if (getNumOctants() == newPartitionRangeGlobalidx[m_rank]) {
+//                 tailOffset = 0;
+//             } else {
+//                 tailOffset = getNumOctants() - newPartitionRangeGlobalidx[m_rank] - 1;
+//             }
+//         else {
+//             if (getNumOctants() > (newPartitionRangeGlobalidx[m_rank] - m_partitionRangeGlobalIdx[m_rank -1])) {
+//                 tailOffset = getNumOctants() - newPartitionRangeGlobalidx[m_rank] - m_partitionRangeGlobalIdx[m_rank -1];
+//             } else {
+//                 tailOffset = 0;
+//             }
+//         }
+//
+//         //Initialize data communicator
+//         DataCommunicator lbCommunicator(m_comm);
+//
+//         //Compute first predecessor and first successor to send buffers to
+//         int firstPredecessor;
+//         int firstSuccessor;
+//         if (m_rank == 0) {
+//             firstPredecessor = -1;
+//             firstSuccessor   =  1;
+//         } else {
+//             uint64_t firstOctantGlobalIdx = m_partitionRangeGlobalIdx[m_rank-1] + 1;
+//
+//             firstPredecessor = -1;
+//             if (headOffset > 0) {
+//                 uint64_t globalLastHead = firstOctantGlobalIdx + headOffset - 1;
+//                 for(int pre = m_rank - 1; pre >=0; --pre){
+//                     if (globalLastHead <= newPartitionRangeGlobalidx[pre]) {
+//                         firstPredecessor = pre;
+//                     }
+//                 }
+//             }
+//
+//             firstSuccessor = m_nproc;
+//             if (tailOffset > 0) {
+//                 uint64_t globalFirstTail = firstOctantGlobalIdx + getNumOctants() - tailOffset;
+//                 for(int post = m_rank + 1; post < m_nproc; ++post){
+//                     if (globalFirstTail <= newPartitionRangeGlobalidx[post] && (uint64_t)globalFirstTail > newPartitionRangeGlobalidx[post-1]) {
+//                         firstSuccessor = post;
+//                     }
+//                 }
+//             }
+//         }
+//
+
         //find resident octants local offset lastHead(lh) and firstTail(ft)
         int32_t lh,ft;
         if(m_rank == 0)
