@@ -754,6 +754,7 @@ namespace bitpit {
 
                 m_octree.m_octants.assign(first, last);
                 octvector(m_octree.m_octants).swap(m_octree.m_octants);
+                m_octree.m_sizeOctants = m_octree.m_octants.size();
 
                 first = octantsCopy.end();
                 last = octantsCopy.end();
@@ -1014,7 +1015,6 @@ namespace bitpit {
                 }
 
                 //MOVE RESIDENT TO BEGIN IN OCTANTS
-                m_octree.m_sizeOctants = m_octree.m_octants.size();
                 uint32_t resEnd = m_octree.m_sizeOctants - tailOffset;
                 uint32_t nofResidents = resEnd - headOffset;
                 uint32_t octCounter = 0;
@@ -1025,6 +1025,7 @@ namespace bitpit {
                 }
                 uint32_t newCounter = nofNewHead + nofNewTail + nofResidents;
                 m_octree.m_octants.resize(newCounter, Octant(m_dim));
+                m_octree.m_sizeOctants = m_octree.m_octants.size();
                 userData.resize(newCounter);
                 //MOVE RESIDENTS IN RIGHT POSITION
                 uint32_t resCounter = nofNewHead + nofResidents - 1;
@@ -1051,6 +1052,7 @@ namespace bitpit {
                 }
                 lbCommunicator.waitAllSends();
                 octvector(m_octree.m_octants).swap(m_octree.m_octants);
+                m_octree.m_sizeOctants = m_octree.m_octants.size();
 
                 userData.shrink();
 
