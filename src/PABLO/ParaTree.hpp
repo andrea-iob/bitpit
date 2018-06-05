@@ -842,7 +842,6 @@ namespace bitpit {
                 else if(m_rank == 0){
                     firstSuccessor = 1;
                 }
-                MPI_Barrier(m_comm); //da spostare prima della prima comunicazione
 
                 int intBuffer = 0;
                 int contatore = 0;
