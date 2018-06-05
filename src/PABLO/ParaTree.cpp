@@ -4443,8 +4443,6 @@ namespace bitpit {
 
         m_loadBalanceRanges = LoadBalanceRanges(m_serial, sendRanges, recvRanges);
 
-        std::array<uint32_t,4> limits = {{0,0,0,0}};
-
         if(m_serial)
             {
                 m_lastOp = OP_LOADBALANCE_FIRST;
@@ -4460,11 +4458,6 @@ namespace bitpit {
                 LocalTree::octvector octantsCopy = m_octree.m_octants;
                 LocalTree::octvector::const_iterator first = octantsCopy.begin() + stride;
                 LocalTree::octvector::const_iterator last = first + partition[m_rank];
-
-                limits[1] = stride;
-                limits[2] = limits[1] + partition[m_rank];
-                limits[3] = m_octree.m_octants.size();
-                std::pair<int,std::array<uint32_t,4> > procLimits(m_rank,limits);
 
                 m_octree.m_octants.assign(first, last);
                 octvector(m_octree.m_octants).swap(m_octree.m_octants);
@@ -4571,9 +4564,6 @@ namespace bitpit {
                             std::size_t buffSize = (std::size_t)nofElementsFromSuccessiveToPrevious * (std::size_t)Octant::getBinarySize();
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
-                            limits[0] = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1);
-                            limits[1] = (uint32_t)lh + 1;
-                            std::pair<int,std::array<uint32_t,4> > procLimits(p,limits);
 
                             for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
                                 //WRITE octants from 0 to lh in sendBuffer[p]
@@ -4592,9 +4582,6 @@ namespace bitpit {
                             std::size_t buffSize = (std::size_t)nofElementsFromSuccessiveToPrevious * (std::size_t)Octant::getBinarySize();
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
-                            limits[0] = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1);
-                            limits[1] = (uint32_t)lh + 1;
-                            std::pair<int,std::array<uint32_t,4> > procLimits(p,limits);
 
                             for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
                                 //WRITE octants from lh - partition[p] to lh
@@ -4622,9 +4609,6 @@ namespace bitpit {
                             std::size_t buffSize = (std::size_t)nofElementsFromPreviousToSuccessive * (std::size_t)Octant::getBinarySize();
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
-                            limits[0] = ft;
-                            limits[1] = ft + nofElementsFromPreviousToSuccessive;
-                            std::pair<int,std::array<uint32_t,4> > procLimits(p,limits);
 
                             for(uint32_t i = ft; i < ft + nofElementsFromPreviousToSuccessive; ++i){
                                 //WRITE octants from ft to octantsSize-1
@@ -4643,9 +4627,6 @@ namespace bitpit {
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
                             uint32_t endOctants = ft + nofElementsFromPreviousToSuccessive - 1;
-                            limits[0] = ft;
-                            limits[1] = endOctants + 1;
-                            std::pair<int,std::array<uint32_t,4> > procLimits(p,limits);
 
                             for(uint32_t i = ft; i <= endOctants; ++i ){
                                 //WRITE octants from ft to ft + partition[p] -1
