@@ -4648,12 +4648,12 @@ namespace bitpit {
                 //READ number of octants per sender
                 vector<int> recvRanks = lbCommunicator.getRecvRanks();
                 std::sort(recvRanks.begin(),recvRanks.end());
-                for(auto i : recvRanks){
-                    long bufferSize = lbCommunicator.getRecvBuffer(i).getSize();
+                for(int rank : recvRanks){
+                    long bufferSize = lbCommunicator.getRecvBuffer(rank).getSize();
                     uint32_t nofNewPerProc = (uint32_t)(bufferSize / (uint32_t)Octant::getBinarySize());
-                    if(i < m_rank)
+                    if(rank < m_rank)
                         nofNewHead += nofNewPerProc;
-                    else if(i > m_rank)
+                    else if(rank > m_rank)
                         nofNewTail += nofNewPerProc;
                 }
 
