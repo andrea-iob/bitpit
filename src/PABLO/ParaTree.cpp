@@ -4639,7 +4639,6 @@ namespace bitpit {
                     }
                 }
 
-
                 lbCommunicator.discoverRecvs();
                 lbCommunicator.startAllRecvs();
 
@@ -4699,6 +4698,7 @@ namespace bitpit {
                 m_octree.m_sizeOctants = m_octree.m_octants.size();
 
                 delete [] newPartitionRangeGlobalidx; newPartitionRangeGlobalidx = NULL;
+
                 //Update and ghosts here
                 updateLoadBalance();
                 computeGhostHalo();
