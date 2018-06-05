@@ -796,24 +796,24 @@ namespace bitpit {
                 }
                 if(lh < 0)
                     lh = - 1;
-                else if(lh > (int64_t) m_octree.m_octants.size() - 1)
-                    lh = m_octree.m_octants.size() - 1;
+                else if(lh > (int64_t) getNumOctants() - 1)
+                    lh = getNumOctants() - 1;
 
                 if(m_rank == m_nproc - 1)
-                    ft = m_octree.m_octants.size();
+                    ft = getNumOctants();
                 else if(m_rank == 0)
                     ft = (int32_t)(newPartitionRangeGlobalidx[m_rank] + 1);
                 else{
                     ft = (int32_t)(newPartitionRangeGlobalidx[m_rank] - m_partitionRangeGlobalIdx[m_rank -1]);
                 }
-                if(ft > (int32_t)(m_octree.m_octants.size() - 1))
-                    ft = m_octree.m_octants.size();
+                if(ft > (int32_t)(getNumOctants() - 1))
+                    ft = getNumOctants();
                 else if(ft < 0)
                     ft = 0;
 
                 //compute size Head and size Tail
                 uint32_t headSize = (uint32_t)(lh + 1);
-                uint32_t tailSize = (uint32_t)(m_octree.m_octants.size() - ft);
+                uint32_t tailSize = (uint32_t)(getNumOctants() - ft);
                 uint32_t headOffset = headSize;
                 uint32_t tailOffset = tailSize;
 
@@ -1014,7 +1014,7 @@ namespace bitpit {
                 }
 
                 //MOVE RESIDENT TO BEGIN IN OCTANTS
-                uint32_t resEnd = m_octree.m_sizeOctants - tailOffset;
+                uint32_t resEnd = getNumOctants() - tailOffset;
                 uint32_t nofResidents = resEnd - headOffset;
                 uint32_t octCounter = 0;
                 for(uint32_t i = headOffset; i < resEnd; ++i){
