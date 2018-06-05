@@ -4681,7 +4681,7 @@ namespace bitpit {
                 //MOVE RESIDENT TO BEGIN IN OCTANTS
                 uint32_t resEnd = getNumOctants() - tailOffset;
                 uint32_t nofResidents = resEnd - headOffset;
-                int octCounter = 0;
+                uint32_t octCounter = 0;
                 for(uint32_t i = headOffset; i < resEnd; ++i){
                     m_octree.m_octants[octCounter] = m_octree.m_octants[i];
                     ++octCounter;
