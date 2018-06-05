@@ -736,6 +736,12 @@ namespace bitpit {
         void
         privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partition){
 
+            // Update load balance ranges
+            std::unordered_map<int, std::array<uint32_t, 2>> sendRanges = evalLoadBalanceSendRanges(partition);
+            std::unordered_map<int, std::array<uint32_t, 2>> recvRanges = evalLoadBalanceRecvRanges(partition);
+
+            m_loadBalanceRanges = LoadBalanceRanges(m_serial, sendRanges, recvRanges);
+
             // Load balance
             if(m_serial)
             {
@@ -1063,12 +1069,6 @@ namespace bitpit {
                 userData.resizeGhost(nofGhosts);
 
             }
-
-            // Update load balance ranges
-            std::unordered_map<int, std::array<uint32_t, 2>> sendRanges = evalLoadBalanceSendRanges(partition);
-            std::unordered_map<int, std::array<uint32_t, 2>> recvRanges = evalLoadBalanceRecvRanges(partition);
-
-            m_loadBalanceRanges = LoadBalanceRanges(m_serial, sendRanges, recvRanges);
         };
 #endif
 
