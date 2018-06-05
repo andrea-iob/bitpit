@@ -4564,8 +4564,12 @@ namespace bitpit {
                                 nofElementsFromSuccessiveToPrevious  = headSize;
 
                             std::size_t buffSize = (std::size_t)nofElementsFromSuccessiveToPrevious * (std::size_t)Octant::getBinarySize();
+                            //add room for uint32_t, number of octants in this buffer
+                            buffSize += sizeof(uint32_t);
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
+                            //store the number of octants at the beginning of the buffer
+                            sendBuffer << nofElementsFromSuccessiveToPrevious;
 
                             for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
                                 sendBuffer << m_octree.m_octants[i];
@@ -4581,8 +4585,12 @@ namespace bitpit {
                         else{
                             nofElementsFromSuccessiveToPrevious = globalLastHead - (newPartitionRangeGlobalidx[p] - partition[p]);
                             std::size_t buffSize = (std::size_t)nofElementsFromSuccessiveToPrevious * (std::size_t)Octant::getBinarySize();
+                            //add room for uint32_t, number of octants in this buffer
+                            buffSize += sizeof(uint32_t);
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
+                            //store the number of octants at the beginning of the buffer
+                            sendBuffer << nofElementsFromSuccessiveToPrevious;
 
                             for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
                                 sendBuffer << m_octree.m_octants[i];
@@ -4607,8 +4615,12 @@ namespace bitpit {
                                 nofElementsFromPreviousToSuccessive = tailSize;
 
                             std::size_t buffSize = (std::size_t)nofElementsFromPreviousToSuccessive * (std::size_t)Octant::getBinarySize();
+                            //add room for uint32_t, number of octants in this buffer
+                            buffSize += sizeof(uint32_t);
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
+                            //store the number of octants at the beginning of the buffer
+                            sendBuffer << nofElementsFromPreviousToSuccessive;
 
                             for(uint32_t i = ft; i < ft + nofElementsFromPreviousToSuccessive; ++i){
                                 sendBuffer << m_octree.m_octants[i];
@@ -4624,8 +4636,12 @@ namespace bitpit {
                             nofElementsFromPreviousToSuccessive = newPartitionRangeGlobalidx[p] - globalFirstTail + 1;
                             uint32_t endOctants = ft + nofElementsFromPreviousToSuccessive - 1;
                             std::size_t buffSize = (std::size_t)nofElementsFromPreviousToSuccessive * (std::size_t)Octant::getBinarySize();
+                            //add room for uint32_t, number of octants in this buffer
+                            buffSize += sizeof(uint32_t);
                             lbCommunicator.setSend(p,buffSize);
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
+                            //store the number of octants at the beginning of the buffer
+                            sendBuffer << nofElementsFromPreviousToSuccessive;
 
                             for(uint32_t i = ft; i <= endOctants; ++i ){
                                 sendBuffer << m_octree.m_octants[i];
@@ -4641,6 +4657,7 @@ namespace bitpit {
 
                 lbCommunicator.discoverRecvs();
                 lbCommunicator.startAllRecvs();
+                lbCommunicator.startAllSends();
 
                 uint32_t nofNewHead = 0;
                 uint32_t nofNewTail = 0;
@@ -4648,9 +4665,13 @@ namespace bitpit {
                 //READ number of octants per sender
                 vector<int> recvRanks = lbCommunicator.getRecvRanks();
                 std::sort(recvRanks.begin(),recvRanks.end());
+                vector<uint32_t> nofNewOverProcs(recvRanks.size());
                 for(int rank : recvRanks){
-                    long bufferSize = lbCommunicator.getRecvBuffer(rank).getSize();
-                    uint32_t nofNewPerProc = (uint32_t)(bufferSize / (uint32_t)Octant::getBinarySize());
+                    lbCommunicator.waitRecv(rank);
+                    RecvBuffer & recvBuffer = lbCommunicator.getRecvBuffer(rank);
+                    uint32_t nofNewPerProc;
+                    recvBuffer >> nofNewPerProc;
+                    nofNewOverProcs[rank] = nofNewPerProc;
                     if(rank < m_rank)
                         nofNewHead += nofNewPerProc;
                     else if(rank > m_rank)
@@ -4674,16 +4695,12 @@ namespace bitpit {
                     m_octree.m_octants[resCounter - k] = m_octree.m_octants[nofResidents - k - 1];
                 }
 
-                lbCommunicator.startAllSends();
-
                 //READ BUFFERS AND BUILD NEW OCTANTS
                 newCounter = 0;
                 bool jumpResident = false;
                 for(int rank : recvRanks){
-                    lbCommunicator.waitRecv(rank);
                     RecvBuffer & recvBuffer = lbCommunicator.getRecvBuffer(rank);
-                    long bufferSize = recvBuffer.getSize();
-                    uint32_t nofNewPerProc = (uint32_t)(bufferSize / (uint32_t)Octant::getBinarySize());
+                    uint32_t nofNewPerProc = nofNewOverProcs[rank];
                     if(rank > m_rank && !jumpResident){
                         newCounter += nofResidents ;
                         jumpResident = true;
