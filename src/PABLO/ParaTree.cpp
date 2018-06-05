@@ -4438,11 +4438,13 @@ namespace bitpit {
     void
     ParaTree::privateLoadBalance(uint32_t* partition){
 
+        // Update load balance ranges
         std::unordered_map<int, std::array<uint32_t, 2>> sendRanges = evalLoadBalanceSendRanges(partition);
         std::unordered_map<int, std::array<uint32_t, 2>> recvRanges = evalLoadBalanceRecvRanges(partition);
 
         m_loadBalanceRanges = LoadBalanceRanges(m_serial, sendRanges, recvRanges);
 
+        // Load balance
         if(m_serial)
             {
                 m_lastOp = OP_LOADBALANCE_FIRST;
@@ -4466,7 +4468,7 @@ namespace bitpit {
                 first = octantsCopy.end();
                 last = octantsCopy.end();
 
-                //Update and ghosts here
+                //Update and build ghosts here
                 updateLoadBalance();
                 computeGhostHalo();
             }
@@ -4522,7 +4524,7 @@ namespace bitpit {
                 uint32_t headOffset = headSize;
                 uint32_t tailOffset = tailSize;
 
-                //build send buffers
+                //Initialize data communicator
                 DataCommunicator lbCommunicator(m_comm);
 
                 //Compute first predecessor and first successor to send buffers to
@@ -4566,7 +4568,6 @@ namespace bitpit {
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
 
                             for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
-                                //WRITE octants from 0 to lh in sendBuffer[p]
                                 sendBuffer << m_octree.m_octants[i];
                             }
                             if(nofElementsFromSuccessiveToPrevious == headSize)
@@ -4584,7 +4585,6 @@ namespace bitpit {
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
 
                             for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
-                                //WRITE octants from lh - partition[p] to lh
                                 sendBuffer << m_octree.m_octants[i];
                             }
                             lh -= nofElementsFromSuccessiveToPrevious;
@@ -4611,7 +4611,6 @@ namespace bitpit {
                             SendBuffer &sendBuffer = lbCommunicator.getSendBuffer(p);
 
                             for(uint32_t i = ft; i < ft + nofElementsFromPreviousToSuccessive; ++i){
-                                //WRITE octants from ft to octantsSize-1
                                 sendBuffer << m_octree.m_octants[i];
                             }
                             if(nofElementsFromPreviousToSuccessive == tailSize)
@@ -4629,7 +4628,6 @@ namespace bitpit {
                             uint32_t endOctants = ft + nofElementsFromPreviousToSuccessive - 1;
 
                             for(uint32_t i = ft; i <= endOctants; ++i ){
-                                //WRITE octants from ft to ft + partition[p] -1
                                 sendBuffer << m_octree.m_octants[i];
                             }
                             ft += nofElementsFromPreviousToSuccessive;
@@ -4648,6 +4646,7 @@ namespace bitpit {
                 uint32_t nofNewHead = 0;
                 uint32_t nofNewTail = 0;
 
+                //READ number of octants per sender
                 vector<int> recvRanks = lbCommunicator.getRecvRanks();
                 std::sort(recvRanks.begin(),recvRanks.end());
                 for(auto i : recvRanks){

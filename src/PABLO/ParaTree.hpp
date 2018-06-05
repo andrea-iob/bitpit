@@ -736,6 +736,7 @@ namespace bitpit {
         void
         privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partition){
 
+            // Load balance
             if(m_serial)
             {
                 m_lastOp = OP_LOADBALANCE_FIRST;
@@ -817,7 +818,7 @@ namespace bitpit {
                 uint32_t headOffset = headSize;
                 uint32_t tailOffset = tailSize;
 
-                //Communicator declaration
+                //Initialize data communicator
                 DataCommunicator lbCommunicator(m_comm);
 
                 //Compute first predecessor and first successor to send buffers to
@@ -905,7 +906,6 @@ namespace bitpit {
                             sendBuffer << nofElementsFromSuccessiveToPrevious;
 
                             for(int64_t i = lh - nofElementsFromSuccessiveToPrevious + 1; i <= lh; ++i){
-                                //WRITE octants from lh - partition[p] to lh
                                 sendBuffer << m_octree.m_octants[i];
                                 userData.gather(sendBuffer,i);
                             }
@@ -977,7 +977,6 @@ namespace bitpit {
                             sendBuffer << nofElementsFromPreviousToSuccessive;
 
                             for(uint32_t i = ft; i <= endOctants; ++i ){
-                                //WRITE octants from ft to ft + partition[p] -1
                                 sendBuffer << m_octree.m_octants[i];
                                 userData.gather(sendBuffer,i);
                             }
