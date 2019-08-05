@@ -77,9 +77,9 @@ private:
 protected:
         int                     m_spaceDim;
 
-	SurfaceKernel(bool expert);
-	SurfaceKernel(int patch_dim, int space_dim, bool expert);
-	SurfaceKernel(int id, int patch_dim, int space_dim, bool expert);
+	SurfaceKernel(UpdateStrategy updateStrategy);
+	SurfaceKernel(int patch_dim, int space_dim, UpdateStrategy updateStrategy);
+	SurfaceKernel(int id, int patch_dim, int space_dim, UpdateStrategy updateStrategy);
         
 };
 

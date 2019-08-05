@@ -43,7 +43,7 @@ namespace bitpit {
 	Creates an uninitialized patch.
 */
 VolUnstructured::VolUnstructured()
-	: VolumeKernel(true)
+	: VolumeKernel(UPDATE_CUSTOM)
 {
 }
 
@@ -68,7 +68,7 @@ VolUnstructured::VolUnstructured(int dimension)
 	\param dimension is the dimension of the patch
 */
 VolUnstructured::VolUnstructured(int id, int dimension)
-	: VolumeKernel(id, dimension, true)
+	: VolumeKernel(id, dimension, UPDATE_CUSTOM)
 {
 #if BITPIT_ENABLE_MPI==1
 	// This patch supports partitioning
@@ -91,20 +91,6 @@ VolUnstructured::~VolUnstructured()
 std::unique_ptr<PatchKernel> VolUnstructured::clone() const
 {
 	return std::unique_ptr<VolUnstructured>(new VolUnstructured(*this));
-}
-
-/*!
- * Enables or disables expert mode.
- *
- * When expert mode is enabled, it will be possible to change the
- * patch using low level functions (e.g., it will be possible to
- * add individual cells, add vertices, delete cells, ...).
- *
- * \param expert if true, the expert mode will be enabled
- */
-void VolUnstructured::setExpert(bool expert)
-{
-	VolumeKernel::setExpert(expert);
 }
 
 /*!

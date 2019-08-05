@@ -44,7 +44,7 @@ namespace bitpit {
 	Creates an uninitialized patch.
 */
 VolCartesian::VolCartesian()
-	: VolumeKernel(false)
+	: VolumeKernel(UPDATE_AUTOMATIC)
 {
 	initialize();
 }

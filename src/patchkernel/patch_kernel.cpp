@@ -51,10 +51,11 @@ namespace bitpit {
 /*!
 	Creates a new patch.
 
-	\param expert if true, the expert mode will be enabled
+	\param updateStrategy is the update strategy that will be assigned to the
+	patch
 */
-PatchKernel::PatchKernel(bool expert)
-	: m_expert(expert)
+PatchKernel::PatchKernel(UpdateStrategy updateStrategy)
+	: m_updateStrategy(updateStrategy)
 {
 	// Initialize the patch
 	initialize();
@@ -67,10 +68,11 @@ PatchKernel::PatchKernel(bool expert)
 	Creates a new patch.
 
 	\param dimension is the dimension of the patch
-	\param expert if true, the expert mode will be enabled
+	\param updateStrategy is the update strategy that will be assigned to the
+	patch
 */
-PatchKernel::PatchKernel(int dimension, bool expert)
-	: m_expert(expert)
+PatchKernel::PatchKernel(int dimension, UpdateStrategy updateStrategy)
+	: m_updateStrategy(updateStrategy)
 {
 	// Initialize the patch
 	initialize();
@@ -87,10 +89,11 @@ PatchKernel::PatchKernel(int dimension, bool expert)
 
 	\param id is the id that will be assigned to the patch
 	\param dimension is the dimension of the patch
-	\param expert if true, the expert mode will be enabled
+	\param updateStrategy is the update strategy that will be assigned to the
+	patch
 */
-PatchKernel::PatchKernel(int id, int dimension, bool expert)
-	: m_expert(expert)
+PatchKernel::PatchKernel(int id, int dimension, UpdateStrategy updateStrategy)
+	: m_updateStrategy(updateStrategy)
 {
 	// Initialize the patch
 	initialize();
@@ -139,7 +142,7 @@ PatchKernel::PatchKernel(const PatchKernel &other)
       m_interfacesBuildStrategy(other.m_interfacesBuildStrategy),
       m_spawnStatus(other.m_spawnStatus),
       m_adaptionStatus(other.m_adaptionStatus),
-      m_expert(other.m_expert),
+      m_updateStrategy(other.m_updateStrategy),
       m_dimension(other.m_dimension),
       m_hasCustomTolerance(other.m_hasCustomTolerance),
       m_tolerance(other.m_tolerance),
@@ -914,6 +917,16 @@ void PatchKernel::write(VTKWriteMode mode)
 }
 
 /*!
+	Returns the update strategy assigned to the patch.
+
+	\return The update strategy assigned to the patch.
+*/
+PatchKernel::UpdateStrategy PatchKernel::getUpdateStrategy() const
+{
+	return m_updateStrategy;
+}
+
+/*!
 	Returns the current spawn status.
 
 	\return The current spawn status.
@@ -992,39 +1005,6 @@ bool PatchKernel::isDirty(bool global) const
 	bool boundingBoxDirty = isBoundingBoxDirty(global);
 
 	return (spawnNeeed || adaptionDirty || boundingBoxDirty);
-}
-
-/*!
-	Enables or disables expert mode.
-
-	When expert mode is enabled, it will be possible to change the
-	patch using low level functions (e.g., it will be possible to
-	add individual cells, add vertices, delete cells, ...).
-
-	\param expert if true, the expert mode will be enabled
-*/
-void PatchKernel::setExpert(bool expert)
-{
-	if (isExpert() == expert) {
-		return;
-	}
-
-	m_expert = expert;
-}
-
-/*!
-	Checks if the expert mode is enabled.
-
-	When expert mode is enabled, it will be possible to change the
-	patch using low level functions (e.g., it will be possible to
-	add individual cells, add vertices, delete cells, ...).
-
-	\return This method returns true when the expert is enabled,
-	otherwise it returns false.
-*/
-bool PatchKernel::isExpert() const
-{
-	return m_expert;
 }
 
 /*!

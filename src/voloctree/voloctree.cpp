@@ -59,7 +59,7 @@ namespace bitpit {
 	Creates an uninitialized patch.
 */
 VolOctree::VolOctree()
-	: VolumeKernel(false)
+	: VolumeKernel(UPDATE_AUTOMATIC)
 {
 	// Create the tree
 #if BITPIT_ENABLE_MPI==1

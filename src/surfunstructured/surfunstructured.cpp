@@ -42,7 +42,7 @@ namespace bitpit {
 	Creates an uninitialized patch.
 */
 SurfUnstructured::SurfUnstructured()
-	: SurfaceKernel(true)
+	: SurfaceKernel(UPDATE_CUSTOM)
 {
 #if BITPIT_ENABLE_MPI==1
 	// This patch supports partitioning
@@ -73,7 +73,7 @@ SurfUnstructured::SurfUnstructured(int patch_dim, int space_dim)
 	\param space_dim is the dimension of the space
 */
 SurfUnstructured::SurfUnstructured(int id, int patch_dim, int space_dim)
-	: SurfaceKernel(id, patch_dim, space_dim, true)
+	: SurfaceKernel(id, patch_dim, space_dim, UPDATE_CUSTOM)
 {
 #if BITPIT_ENABLE_MPI==1
 	// This patch supports partitioning
@@ -87,7 +87,7 @@ SurfUnstructured::SurfUnstructured(int id, int patch_dim, int space_dim)
 	\param stream is the stream to read from
 */
 SurfUnstructured::SurfUnstructured(std::istream &stream)
-	: SurfaceKernel(false)
+	: SurfaceKernel(UPDATE_CUSTOM)
 {
 #if BITPIT_ENABLE_MPI==1
 	// This patch supports partitioning
@@ -106,20 +106,6 @@ SurfUnstructured::SurfUnstructured(std::istream &stream)
 std::unique_ptr<PatchKernel> SurfUnstructured::clone() const
 {
 	return std::unique_ptr<SurfUnstructured>(new SurfUnstructured(*this));
-}
-
-/*!
- * Enables or disables expert mode.
- *
- * When expert mode is enabled, it will be possible to change the
- * patch using low level functions (e.g., it will be possible to
- * add individual cells, add vertices, delete cells, ...).
- *
- * \param expert if true, the expert mode will be enabled
- */
-void SurfUnstructured::setExpert(bool expert)
-{
-	SurfaceKernel::setExpert(expert);
 }
 
 /*!

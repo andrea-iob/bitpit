@@ -249,6 +249,15 @@ public:
 		INTERFACES_AUTOMATIC
 	};
 
+
+	/*!
+		Update strategy
+	*/
+	enum UpdateStrategy {
+		UPDATE_AUTOMATIC,
+		UPDATE_CUSTOM
+	};
+
 	/*!
 		Spawn status
 	*/
@@ -299,6 +308,8 @@ public:
 
 	virtual void simulateCellUpdate(const long id, adaption::Marker marker, std::vector<Cell> *virtualCells, PiercedVector<Vertex, long> *virtualVertices) const;
 
+	UpdateStrategy getUpdateStrateg() const;
+
 	SpawnStatus getSpawnStatus() const;
 	std::vector<adaption::Info> spawn(bool trackSpawn);
 
@@ -318,7 +329,6 @@ public:
 	void enableCellBalancing(long id, bool enabled);
 
 	bool isDirty(bool global = false) const;
-	bool isExpert() const;
 
 	int getId() const;
 	int getDimension() const;
@@ -580,9 +590,9 @@ protected:
 	PiercedVector<Cell> m_cells;
 	PiercedVector<Interface> m_interfaces;
 
-	PatchKernel(bool expert);
-	PatchKernel(int dimension, bool expert);
-	PatchKernel(int id, int dimension, bool expert);
+	PatchKernel(UpdateStrategy updateStrategy);
+	PatchKernel(int dimension, UpdateStrategy updateStrategy);
+	PatchKernel(int id, int dimension, UpdateStrategy updateStrategy);
 	PatchKernel(const PatchKernel &other);
     PatchKernel & operator=(const PatchKernel &other) = delete;
 
@@ -625,6 +635,8 @@ protected:
 
 	void setInterfacesBuildStrategy(InterfacesBuildStrategy status);
 
+	void setUpdateStrategy(UpdateStrategy updateStrategy);
+
 	void setSpawnStatus(SpawnStatus status);
 	virtual std::vector<adaption::Info> _spawn(bool trackAdaption);
 
@@ -651,8 +663,6 @@ protected:
 	virtual void _findCellFaceNeighs(long id, int face, const std::vector<long> &blackList, std::vector<long> *neighs) const;
 	virtual void _findCellEdgeNeighs(long id, int edge, const std::vector<long> &blackList, std::vector<long> *neighs) const;
 	virtual void _findCellVertexNeighs(long id, int vertex, const std::vector<long> &blackList, std::vector<long> *neighs) const;
-
-	void setExpert(bool expert);
 
 	void addPointToBoundingBox(const std::array<double, 3> &point);
 	void removePointFromBoundingBox(const std::array<double, 3> &point, bool delayedBoxUpdate = false);
@@ -709,11 +719,11 @@ private:
 
 	InterfacesBuildStrategy m_interfacesBuildStrategy;
 
+	UpdateStrategy m_updateStrategy;
+
 	SpawnStatus m_spawnStatus;
 
 	AdaptionStatus m_adaptionStatus;
-
-	bool m_expert;
 
 	int m_id;
 	int m_dimension;

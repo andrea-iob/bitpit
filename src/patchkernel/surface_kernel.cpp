@@ -60,10 +60,11 @@ const unsigned short SurfaceKernel::SELECT_ALL      = 3;
 /*!
 	Creates a new patch.
 
-	\param expert if true, the expert mode will be enabled
+	\param updateStrategy is the update strategy that will be assigned to the
+	patch
 */
-SurfaceKernel::SurfaceKernel(bool expert)
-	: PatchKernel(expert)
+SurfaceKernel::SurfaceKernel(UpdateStrategy updateStrategy)
+	: PatchKernel(updateStrategy)
 {
 	initialize();
 }
@@ -75,7 +76,7 @@ SurfaceKernel::SurfaceKernel(bool expert)
 	\param space_dim is the dimension of the space
 	\param expert if true, the expert mode will be enabled
 */
-SurfaceKernel::SurfaceKernel(int patch_dim, int space_dim, bool expert)
+SurfaceKernel::SurfaceKernel(int patch_dim, int space_dim, UpdateStrategy updateStrategy)
 	: PatchKernel(patch_dim, expert)
 {
     initialize();
@@ -92,7 +93,7 @@ SurfaceKernel::SurfaceKernel(int patch_dim, int space_dim, bool expert)
 	\param space_dim is the dimension of the space
 	\param expert if true, the expert mode will be enabled
 */
-SurfaceKernel::SurfaceKernel(int id, int patch_dim, int space_dim, bool expert)
+SurfaceKernel::SurfaceKernel(int id, int patch_dim, int space_dim, UpdateStrategy updateStrategy)
 	: PatchKernel(id, patch_dim, expert)
 {
     m_spaceDim = space_dim;

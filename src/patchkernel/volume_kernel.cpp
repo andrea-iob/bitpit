@@ -39,10 +39,11 @@ namespace bitpit {
 /*!
 	Creates a new patch.
 
-	\param expert if true, the expert mode will be enabled
+	\param updateStrategy is the update strategy that will be assigned to the
+	patch
 */
-VolumeKernel::VolumeKernel(bool expert)
-	: PatchKernel(expert)
+VolumeKernel::VolumeKernel(UpdateStrategy updateStrategy)
+	: PatchKernel(updateStrategy)
 {
 }
 
@@ -52,7 +53,7 @@ VolumeKernel::VolumeKernel(bool expert)
 	\param dimension is the dimension of the patch
 	\param expert if true, the expert mode will be enabled
 */
-VolumeKernel::VolumeKernel(int dimension, bool expert)
+VolumeKernel::VolumeKernel(int dimension, UpdateStrategy updateStrategy)
 	: PatchKernel(dimension, expert)
 {
 }
@@ -64,7 +65,7 @@ VolumeKernel::VolumeKernel(int dimension, bool expert)
 	\param dimension is the dimension of the patch
 	\param expert if true, the expert mode will be enabled
 */
-VolumeKernel::VolumeKernel(int id, int dimension, bool expert)
+VolumeKernel::VolumeKernel(int id, int dimension, UpdateStrategy updateStrategy)
 	: PatchKernel(id, dimension, expert)
 {
 }
