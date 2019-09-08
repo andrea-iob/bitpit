@@ -631,6 +631,8 @@ protected:
 	std::unordered_map<long, std::vector<long>> binGroupVertices(const PiercedVector<Vertex> &vertices, int nBins);
 	std::unordered_map<long, std::vector<long>> binGroupVertices(int nBins);
 
+	bool areChangesAllowed() const;
+
 	void setAdjacenciesBuildStrategy(AdjacenciesBuildStrategy status);
 
 	void setInterfacesBuildStrategy(InterfacesBuildStrategy status);
