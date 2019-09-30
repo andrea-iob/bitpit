@@ -1923,10 +1923,6 @@ PatchKernel::CellIterator PatchKernel::addCell(ElementType type, std::unique_ptr
 		m_cellIdGenerator.setAssigned(id);
 	}
 
-	if (Cell::getDimension(type) > getDimension()) {
-		return cellEnd();
-	}
-
 	PiercedVector<Cell>::iterator iterator = _addInternal(type, std::move(connectStorage), id);
 
 	return iterator;
@@ -2011,6 +2007,11 @@ PatchKernel::CellIterator PatchKernel::addCell(ElementType type, bool interior,
 PatchKernel::CellIterator PatchKernel::_addInternal(ElementType type, std::unique_ptr<long[]> &&connectStorage,
 													long id)
 {
+	// Check element dimensions
+	if (Cell::getDimension(type) != getDimension()) {
+		throw std::runtime_error("Only cells with the same dimension of the patch are allowed.");
+	}
+
 	// Get the id of the cell before which the new cell should be inserted
 #if BITPIT_ENABLE_MPI==1
 	//
@@ -2058,8 +2059,8 @@ PatchKernel::CellIterator PatchKernel::_addInternal(ElementType type, std::uniqu
 PatchKernel::CellIterator PatchKernel::restoreCell(ElementType type, std::unique_ptr<long[]> &&connectStorage,
 												   long id)
 {
-	if (Cell::getDimension(type) > getDimension()) {
-		return cellEnd();
+	if (Cell::getDimension(type) != getDimension()) {
+		throw std::runtime_error("Interfaces should have codimension 1 with respect to the patch.");
 	}
 
 	PiercedVector<Cell>::iterator iterator = m_cells.find(id);
@@ -3283,8 +3284,8 @@ PatchKernel::InterfaceIterator PatchKernel::addInterface(ElementType type,
 		m_interfaceIdGenerator.setAssigned(id);
 	}
 
-	if (Interface::getDimension(type) > (getDimension() - 1)) {
-		return interfaceEnd();
+	if (Interface::getDimension(type) != getDimension() - 1) {
+		throw std::runtime_error("Interfaces should have codimension 1 with respect to the patch.");
 	}
 
 	PiercedVector<Interface>::iterator iterator = m_interfaces.emreclaim(id, id, type, std::move(connectStorage));
@@ -3312,8 +3313,8 @@ PatchKernel::InterfaceIterator PatchKernel::restoreInterface(ElementType type,
 		return interfaceEnd();
 	}
 
-	if (Interface::getDimension(type) > (getDimension() - 1)) {
-		return interfaceEnd();
+	if (Interface::getDimension(type) != getDimension() - 1) {
+		throw std::runtime_error("Interfaces should have codimension 1 with respect to the patch.");
 	}
 
 	InterfaceIterator iterator = m_interfaces.find(id);
