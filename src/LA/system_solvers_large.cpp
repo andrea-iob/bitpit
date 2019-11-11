@@ -1017,6 +1017,26 @@ void SystemSolver::KSPInit()
 }
 
 /*!
+ * Get a reference to the Kryolov space.
+ *
+ * \return A reference to the Kryolov space.
+ */
+KSP & SystemSolver::getKSP()
+{
+    return m_KSP;
+}
+
+/*!
+ * Get a constant reference to the Kryolov space.
+ *
+ * \return A constant reference to the Kryolov space.
+ */
+const KSP & SystemSolver::getKSP() const
+{
+    return m_KSP;
+}
+
+/*!
  * Get a reference to the options associated to the Kryolov solver.
  *
  * \return A reference to the options associated to the Kryolov solver.

@@ -110,6 +110,8 @@ public:
     void setNullSpace();
     void unsetNullSpace();
 
+    KSP & getKSP();
+    const KSP & getKSP() const;
     KSPOptions & getKSPOptions();
     const KSPOptions & getKSPOptions() const;
     const KSPStatus & getKSPStatus() const;
