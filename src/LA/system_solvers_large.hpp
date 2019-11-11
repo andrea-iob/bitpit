@@ -137,6 +137,10 @@ protected:
     const MPI_Comm & getCommunicator() const;
 #endif
 
+protected:
+    virtual void _preKSPSetupActions();
+    virtual void _postKSPSetupActions();
+
 private:
     static int m_nInstances;
     static std::vector<std::string> m_options;

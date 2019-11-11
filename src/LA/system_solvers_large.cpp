@@ -862,6 +862,7 @@ void SystemSolver::unsetNullSpace()
  */
 void SystemSolver::KSPInit()
 {
+    // Create Krylov space
 #if BITPIT_ENABLE_MPI==1
     KSPCreate(m_communicator, &m_KSP);
 #else
@@ -869,6 +870,23 @@ void SystemSolver::KSPInit()
 #endif
     KSPSetOperators(m_KSP, m_A, m_A);
 
+    // Perform actions before KSP set up
+    _preKSPSetupActions();
+
+    // Setup Krylov space
+    KSPSetFromOptions(m_KSP);
+    KSPSetUp(m_KSP);
+
+    // Perform actions after KSP set up
+    _postKSPSetupActions();
+}
+
+/*!
+ * Perform actions before KSP setup.
+ */
+void SystemSolver::_preKSPSetupActions()
+{
+    // Solver configuration
     KSPSetType(m_KSP, KSPFGMRES);
     if (m_KSPOptions.restart != PETSC_DEFAULT) {
         KSPGMRESSetRestart(m_KSP, m_KSPOptions.restart);
@@ -878,6 +896,7 @@ void SystemSolver::KSPInit()
     }
     KSPSetInitialGuessNonzero(m_KSP, PETSC_TRUE);
 
+    // Preconditioner configuration
     PCType preconditionerType;
 #if BITPIT_ENABLE_MPI == 1
     if (isPartitioned()) {
@@ -901,8 +920,19 @@ void SystemSolver::KSPInit()
             PCFactorSetLevels(preconditioner, m_KSPOptions.levels);
         }
     }
-    KSPSetFromOptions(m_KSP);
-    KSPSetUp(m_KSP);
+}
+
+/*!
+ * Perform actions after KSP setup.
+ */
+void SystemSolver::_postKSPSetupActions()
+{
+    // Get preconditioner information
+    PC preconditioner;
+    KSPGetPC(m_KSP, &preconditioner);
+
+    PCType preconditionerType;
+    PCGetType(preconditioner, &preconditionerType);
 
     // Set ASM sub block preconditioners
     if (strcmp(preconditionerType, PCASM) == 0) {
