@@ -146,6 +146,7 @@ protected:
 
 private:
     static int m_nInstances;
+    static bool m_optionsEditable;
     static std::vector<std::string> m_options;
 
     bool m_assembled;
