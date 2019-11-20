@@ -104,13 +104,13 @@ void SystemSolver::clearInitOptions()
  * \param debug if set to true, debug information will be printed
  */
 SystemSolver::SystemSolver(bool debug)
-    : m_assembled(false), m_pivotType(PIVOT_NONE),
+    : m_assembled(false),
 #if BITPIT_ENABLE_MPI==1
       m_communicator(MPI_COMM_SELF), m_partitioned(false),
 #endif
       m_rowGlobalOffset(0), m_colGlobalOffset(0),
       m_A(nullptr), m_rhs(nullptr), m_solution(nullptr),
-      m_rpivot(nullptr), m_cpivot(nullptr), m_KSP(nullptr)
+      m_KSP(nullptr)
 {
     // Add debug options
     if (debug) {
@@ -184,11 +184,6 @@ void SystemSolver::clear()
 
     KSPDestroy(&m_KSP);
 
-    if (getPivotType() != PIVOT_NONE) {
-        ISDestroy(&m_rpivot);
-        ISDestroy(&m_cpivot);
-    }
-
 #if BITPIT_ENABLE_MPI==1
     freeCommunicator();
 #endif
@@ -200,9 +195,8 @@ void SystemSolver::clear()
  * Assembly the system.
  *
  * \param matrix is the matrix
- * \param pivotType is the type of pivoting that will be used
  */
-void SystemSolver::assembly(const SparseMatrix &matrix, PivotType pivotType)
+void SystemSolver::assembly(const SparseMatrix &matrix)
 {
     // Check if the matrix is assembled
     if (!matrix.isAssembled()) {
@@ -223,12 +217,6 @@ void SystemSolver::assembly(const SparseMatrix &matrix, PivotType pivotType)
     // Initialize matrix
     matrixInit(matrix);
     matrixFill(matrix);
-
-    // Initialize pivot
-    pivotInit(pivotType);
-    if (getPivotType() != PIVOT_NONE) {
-        matrixReorder();
-    }
 
     // Initialize RHS and solution vectors
 #if BITPIT_ENABLE_MPI == 1
@@ -369,11 +357,6 @@ void SystemSolver::solve()
         throw std::runtime_error("Unable to solve the system. The system is not yet assembled.");
     }
 
-    // Reorder the vectors
-    if (getPivotType() != PIVOT_NONE) {
-        vectorsReorder(PETSC_FALSE);
-    }
-
     // Solve the system
     m_KSPStatus.error = KSPSolve(m_KSP, m_rhs, m_solution);
 
@@ -384,11 +367,6 @@ void SystemSolver::solve()
     } else {
         m_KSPStatus.its         = -1;
         m_KSPStatus.convergence = KSP_DIVERGED_BREAKDOWN;
-    }
-
-    // Reorder the vectors
-    if (getPivotType() != PIVOT_NONE) {
-        vectorsReorder(PETSC_TRUE);
     }
 }
 
@@ -596,18 +574,6 @@ void SystemSolver::matrixUpdate(const std::vector<long> &rows, const SparseMatri
 }
 
 /*!
- * Reorder the matrix.
- */
-void SystemSolver::matrixReorder()
-{
-    Mat B;
-    MatPermute(m_A, m_rpivot, m_cpivot, &B);
-    MatDestroy(&m_A);
-    MatDuplicate(B, MAT_COPY_VALUES, &m_A);
-    MatDestroy(&B);
-}
-
-/*!
  * Initialize rhs and solution vectors.
  */
 #if BITPIT_ENABLE_MPI == 1
@@ -642,17 +608,6 @@ void SystemSolver::vectorsInit()
     VecCreateSeq(PETSC_COMM_SELF, nColumns, &m_solution);
     VecCreateSeq(PETSC_COMM_SELF, nRows, &m_rhs);
 #endif
-}
-
-/*!
- * Reorders rhs and solution vectors.
- *
- * \param inv is a flag for inverting the permutation
- */
-void SystemSolver::vectorsReorder(PetscBool inv)
-{
-    VecPermute(m_solution, m_cpivot, inv);
-    VecPermute(m_rhs, m_rpivot, inv);
 }
 
 /*!
@@ -877,54 +832,6 @@ void SystemSolver::dump(const std::string &directory, const std::string &prefix)
     PetscViewerFileSetName(solutionViewer, filePathStream.str().c_str());
     VecView(m_solution, solutionViewer);
     PetscViewerDestroy(&solutionViewer);
-}
-
-/*!
- * Initialize pivot
- *
- * \param pivotType is the type of pivoting that will be used
- */
-void SystemSolver::pivotInit(PivotType pivotType)
-{
-    m_pivotType = pivotType;
-
-    MatOrderingType petscPivotType;
-    switch (m_pivotType) {
-
-    case (PIVOT_ND):
-        petscPivotType = MATORDERINGNATURAL;
-        break;
-
-    case (PIVOT_1WD):
-        petscPivotType = MATORDERING1WD;
-        break;
-
-    case (PIVOT_RCM):
-        petscPivotType = MATORDERINGRCM;
-        break;
-
-    case (PIVOT_MD):
-        petscPivotType = MATORDERINGQMD;
-        break;
-
-    default:
-        return;
-
-    }
-
-    MatGetOrdering(m_A, petscPivotType, &m_rpivot, &m_cpivot);
-    ISSetPermutation(m_rpivot);
-    ISSetPermutation(m_cpivot);
-}
-
-/*!
- * Get the pivot type.
- *
- * \result The pivot type.
- */
-SystemSolver::PivotType SystemSolver::getPivotType()
-{
-    return m_pivotType;
 }
 
 /*!

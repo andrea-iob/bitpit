@@ -68,14 +68,6 @@ struct KSPStatus {
 class SystemSolver {
 
 public:
-    enum PivotType {
-        PIVOT_NONE,  // Natural
-        PIVOT_ND,    // Nested Dissection
-        PIVOT_1WD,   // One-way Dissection
-        PIVOT_RCM,   // Reverse Cuthill-McKee
-        PIVOT_MD     // Quotient Minimum Degree
-    };
-
     static void addInitOption(const std::string &option);
     static void addInitOptions(int argc, char **args);
     static void addInitOptions(const std::vector<std::string> &options);
@@ -86,7 +78,7 @@ public:
     virtual ~SystemSolver();
 
     void clear();
-    void assembly(const SparseMatrix &matrix, PivotType pivotType = PIVOT_NONE);
+    void assembly(const SparseMatrix &matrix);
     bool isAssembled() const;
 
     void update(const std::vector<long> &rows, const SparseMatrix &elements);
@@ -104,8 +96,6 @@ public:
     void solve(const std::vector<double> &rhs, std::vector<double> *solution);
 
     void dump(const std::string &directory, const std::string &prefix = "") const;
-
-    PivotType getPivotType();
 
     void setNullSpace();
     void unsetNullSpace();
@@ -152,7 +142,6 @@ private:
     static std::vector<std::string> m_options;
 
     bool m_assembled;
-    PivotType m_pivotType;
 
 #if BITPIT_ENABLE_MPI==1
     MPI_Comm m_communicator;
@@ -167,14 +156,9 @@ private:
     Vec m_rhs;
     Vec m_solution;
 
-    IS m_rpivot;
-    IS m_cpivot;
-
     KSP m_KSP;
     KSPOptions m_KSPOptions;
     KSPStatus m_KSPStatus;
-
-    void pivotInit(PivotType pivotType);
 
     void KSPInit();
 
