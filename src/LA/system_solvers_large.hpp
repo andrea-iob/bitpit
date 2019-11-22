@@ -147,6 +147,10 @@ protected:
     virtual void _preKSPSolveActions();
     virtual void _postKSPSolveActions();
 
+    Mat m_A;
+    Vec m_rhs;
+    Vec m_solution;
+
 private:
     static int m_nInstances;
     static bool m_optionsEditable;
@@ -163,10 +167,6 @@ private:
 
     long m_rowGlobalOffset;
     long m_colGlobalOffset;
-
-    Mat m_A;
-    Vec m_rhs;
-    Vec m_solution;
 
     KSP m_KSP;
     KSPOptions m_KSPOptions;
