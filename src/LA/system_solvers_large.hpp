@@ -78,6 +78,9 @@ public:
     virtual ~SystemSolver();
 
     void clear();
+
+    void setPermutations(long nRows, const long *rowRanks, long nCols, const long *colRanks);
+
     void assembly(const SparseMatrix &matrix);
     bool isAssembled() const;
 
@@ -125,14 +128,13 @@ protected:
     void matrixInit(const SparseMatrix &matrix);
     void matrixFill(const SparseMatrix &matrix);
     void matrixUpdate(const std::vector<long> &rows, const SparseMatrix &elements);
-    void matrixReorder();
 
 #if BITPIT_ENABLE_MPI == 1
     void vectorsInit(const std::vector<long> &ghosts);
 #else
     void vectorsInit();
 #endif
-    void vectorsReorder(PetscBool inv);
+    void vectorsPermute(bool invert);
     void vectorsFill(const std::vector<double> &rhs, std::vector<double> *solution);
     void vectorsExport(std::vector<double> *solution);
 
@@ -171,6 +173,9 @@ private:
     KSP m_KSP;
     KSPOptions m_KSPOptions;
     KSPStatus m_KSPStatus;
+
+    IS m_rowPermutations;
+    IS m_colPermutations;
 
 #if BITPIT_ENABLE_MPI==1
     void setCommunicator(MPI_Comm communicator);

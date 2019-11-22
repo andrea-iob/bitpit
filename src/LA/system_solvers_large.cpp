@@ -111,7 +111,7 @@ SystemSolver::SystemSolver(bool debug)
 #endif
       m_rowGlobalOffset(0), m_colGlobalOffset(0),
       m_A(nullptr), m_rhs(nullptr), m_solution(nullptr),
-      m_KSP(nullptr)
+      m_rowPermutations(nullptr), m_colPermutations(nullptr), m_KSP(nullptr)
 {
     // Add debug options
     if (debug) {
@@ -175,6 +175,7 @@ SystemSolver::~SystemSolver()
  */
 void SystemSolver::clear()
 {
+
     if (isSetUp()) {
         KSPDestroy(&m_KSP);
         m_KSP = nullptr;
@@ -194,9 +195,58 @@ void SystemSolver::clear()
         m_assembled = false;
     }
 
+    if (m_rowPermutations) {
+        ISDestroy(&m_rowPermutations);
+    }
+
+    if (m_colPermutations) {
+        ISDestroy(&m_colPermutations);
+    }
+
     if (m_nInstances == 0) {
         m_optionsEditable = true;
     }
+}
+
+/*!
+ * Set the permutations that will use internally by the solver.
+ *
+ * \param matrix is the matrix
+ */
+void SystemSolver::setPermutations(long nRows, const long *rowRanks, long nCols, const long *colRanks)
+{
+    // Permutation has to be set before assempling the system
+    if (isAssembled()) {
+        throw std::runtime_error("Unable to set the permutations. The system is already assembled.");
+    }
+
+    // Destroy existing permutations
+    if (m_rowPermutations) {
+        ISDestroy(&m_rowPermutations);
+    }
+
+    if (m_colPermutations) {
+        ISDestroy(&m_colPermutations);
+    }
+
+    // Create new permutations
+    PetscInt *rowPermutationsStorage;
+    PetscMalloc(nRows, &rowPermutationsStorage);
+    for (long i = 0; i < nRows; ++i) {
+        rowPermutationsStorage[i] = rowRanks[i];
+    }
+
+    ISCreateGeneral(m_communicator, nRows, rowPermutationsStorage, PETSC_OWN_POINTER, &m_rowPermutations);
+    ISSetPermutation(m_rowPermutations);
+
+    PetscInt *colPermutationsStorage;
+    PetscMalloc(nCols, &colPermutationsStorage);
+    for (long j = 0; j < nRows; ++j) {
+        colPermutationsStorage[j] = colRanks[j];
+    }
+
+    ISCreateGeneral(m_communicator, nCols, colPermutationsStorage, PETSC_OWN_POINTER, &m_colPermutations);
+    ISSetPermutation(m_colPermutations);
 }
 
 /*!
@@ -420,6 +470,8 @@ void SystemSolver::solve(const std::vector<double> &rhs, std::vector<double> *so
  */
 void SystemSolver::_preKSPSolveActions()
 {
+    // Apply permutations
+    vectorsPermute(false);
 }
 
 /*!
@@ -427,6 +479,8 @@ void SystemSolver::_preKSPSolveActions()
  */
 void SystemSolver::_postKSPSolveActions()
 {
+    // Invert permutations
+    vectorsPermute(true);
 }
 
 /*!
@@ -648,6 +702,29 @@ void SystemSolver::vectorsInit()
     VecCreateSeq(PETSC_COMM_SELF, nColumns, &m_solution);
     VecCreateSeq(PETSC_COMM_SELF, nRows, &m_rhs);
 #endif
+}
+
+/*!
+ * Apply permutations to RHS and solution vectors.
+ *
+ * \param invert is a flag for inverting the permutation
+ */
+void SystemSolver::vectorsPermute(bool invert)
+{
+    PetscBool petscInvert;
+    if (invert) {
+        petscInvert = PETSC_TRUE;
+    } else {
+        petscInvert = PETSC_FALSE;
+    }
+
+    if (m_colPermutations) {
+        VecPermute(m_solution, m_colPermutations, petscInvert);
+    }
+
+    if (m_rowPermutations) {
+        VecPermute(m_rhs, m_rowPermutations, petscInvert);
+    }
 }
 
 /*!
