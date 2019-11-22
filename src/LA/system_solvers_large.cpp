@@ -357,6 +357,9 @@ void SystemSolver::solve()
         throw std::runtime_error("Unable to solve the system. The system is not yet assembled.");
     }
 
+    // Perfrom actions before KSP solution
+    _preKSPSolveActions();
+
     // Solve the system
     m_KSPStatus.error = KSPSolve(m_KSP, m_rhs, m_solution);
 
@@ -368,6 +371,9 @@ void SystemSolver::solve()
         m_KSPStatus.its         = -1;
         m_KSPStatus.convergence = KSP_DIVERGED_BREAKDOWN;
     }
+
+    // Perfrom actions after KSP solution
+    _postKSPSolveActions();
 }
 
 /*!
@@ -387,6 +393,20 @@ void SystemSolver::solve(const std::vector<double> &rhs, std::vector<double> *so
 
     // Export the solution
     vectorsExport(solution);
+}
+
+/*!
+ * Pre-solve actions.
+ */
+void SystemSolver::_preKSPSolveActions()
+{
+}
+
+/*!
+ * Post-solve actions.
+ */
+void SystemSolver::_postKSPSolveActions()
+{
 }
 
 /*!

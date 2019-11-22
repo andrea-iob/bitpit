@@ -141,6 +141,9 @@ protected:
     virtual void _preKSPSetupActions();
     virtual void _postKSPSetupActions();
 
+    virtual void _preKSPSolveActions();
+    virtual void _postKSPSolveActions();
+
 private:
     static int m_nInstances;
     static std::vector<std::string> m_options;
