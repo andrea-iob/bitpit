@@ -105,7 +105,7 @@ void SystemSolver::clearInitOptions()
  * \param debug if set to true, debug information will be printed
  */
 SystemSolver::SystemSolver(bool debug)
-    : m_assembled(false),
+    : m_assembled(false), m_setUp(false),
 #if BITPIT_ENABLE_MPI==1
       m_communicator(MPI_COMM_SELF), m_partitioned(false),
 #endif
@@ -175,21 +175,24 @@ SystemSolver::~SystemSolver()
  */
 void SystemSolver::clear()
 {
-    if (!isAssembled()) {
-        return;
+    if (isSetUp()) {
+        KSPDestroy(&m_KSP);
+        m_KSP = nullptr;
+
+        m_setUp = false;
     }
 
-    MatDestroy(&m_A);
-    VecDestroy(&m_rhs);
-    VecDestroy(&m_solution);
-
-    KSPDestroy(&m_KSP);
+    if (!isAssembled()) {
+        MatDestroy(&m_A);
+        VecDestroy(&m_rhs);
+        VecDestroy(&m_solution);
 
 #if BITPIT_ENABLE_MPI==1
-    freeCommunicator();
+        freeCommunicator();
 #endif
 
-    m_assembled = false;
+        m_assembled = false;
+    }
 
     if (m_nInstances == 0) {
         m_optionsEditable = true;
@@ -229,9 +232,6 @@ void SystemSolver::assembly(const SparseMatrix &matrix)
 #else
     vectorsInit();
 #endif
-
-    // Initialize Krylov solver
-    KSPInit();
 
     // The system is now assembled
     m_assembled = true;
@@ -353,6 +353,16 @@ bool SystemSolver::isAssembled() const
 }
 
 /*!
+ * Check if the system is set up.
+ *
+ * \return Returns true if the system is set up, false otherwise.
+ */
+bool SystemSolver::isSetUp() const
+{
+    return m_setUp;
+}
+
+/*!
  * Solve the system
  */
 void SystemSolver::solve()
@@ -360,6 +370,11 @@ void SystemSolver::solve()
     // Check if the system is assembled
     if (!isAssembled()) {
         throw std::runtime_error("Unable to solve the system. The system is not yet assembled.");
+    }
+
+    // Check if the system is set up
+    if (!isSetUp()) {
+        setUp();
     }
 
     // Perfrom actions before KSP solution
@@ -883,10 +898,20 @@ void SystemSolver::unsetNullSpace()
 }
 
 /*!
- * Initialize the Krylov solver.
+ * Setup the system.
  */
-void SystemSolver::KSPInit()
+void SystemSolver::setUp()
 {
+    // Check if the system is assembled
+    if (!isAssembled()) {
+        throw std::runtime_error("Unable to solve the system. The system is not yet assembled.");
+    }
+
+    // Destroy existing Krylov space
+    if (m_KSP) {
+        KSPDestroy(&m_KSP);
+    }
+
     // Create Krylov space
 #if BITPIT_ENABLE_MPI==1
     KSPCreate(m_communicator, &m_KSP);

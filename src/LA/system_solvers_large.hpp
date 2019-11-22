@@ -83,6 +83,9 @@ public:
 
     void update(const std::vector<long> &rows, const SparseMatrix &elements);
 
+    void setUp();
+    bool isSetUp() const;
+
     long getRowCount() const;
     long getColCount() const;
 #if BITPIT_ENABLE_MPI==1
@@ -150,6 +153,7 @@ private:
     static std::vector<std::string> m_options;
 
     bool m_assembled;
+    bool m_setUp;
 
 #if BITPIT_ENABLE_MPI==1
     MPI_Comm m_communicator;
@@ -167,8 +171,6 @@ private:
     KSP m_KSP;
     KSPOptions m_KSPOptions;
     KSPStatus m_KSPStatus;
-
-    void KSPInit();
 
 #if BITPIT_ENABLE_MPI==1
     void setCommunicator(MPI_Comm communicator);
