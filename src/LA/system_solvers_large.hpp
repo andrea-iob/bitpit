@@ -174,13 +174,15 @@ private:
     KSPOptions m_KSPOptions;
     KSPStatus m_KSPStatus;
 
-    IS m_rowPermutations;
-    IS m_colPermutations;
+    IS m_rowPermutation;
+    IS m_colPermutation;
 
 #if BITPIT_ENABLE_MPI==1
     void setCommunicator(MPI_Comm communicator);
     void freeCommunicator();
 #endif
+
+    void resetPermutations();
 
 };
 
