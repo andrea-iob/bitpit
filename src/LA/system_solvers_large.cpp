@@ -502,6 +502,11 @@ void SystemSolver::matrixInit(const SparseMatrix &matrix)
     long nRows = matrix.getRowCount();
     long nCols = matrix.getColCount();
 
+    const PetscInt *rowRanks = nullptr;
+    if (m_rowPermutation) {
+        ISGetIndices(m_rowPermutation, &rowRanks);
+    }
+
     // Set row and column global offset
 #if BITPIT_ENABLE_MPI == 1
     m_rowGlobalOffset = matrix.getRowGlobalOffset();
@@ -525,7 +530,12 @@ void SystemSolver::matrixInit(const SparseMatrix &matrix)
     std::vector<int> o_nnz(nRows, 0);
     if (nOffDiagonalCols > 0) {
         for (long row = 0; row < nRows; ++row) {
-            ConstProxyVector<long> rowPattern = matrix.getRowPattern(row);
+            long matrixRow = row;
+            if (m_rowPermutation) {
+                matrixRow = rowRanks[matrixRow];
+            }
+
+            ConstProxyVector<long> rowPattern = matrix.getRowPattern(matrixRow);
             int nRowNZ = rowPattern.size();
             for (int k = 0; k < nRowNZ; ++k) {
                 long columnGlobalId = rowPattern[k];
@@ -538,7 +548,12 @@ void SystemSolver::matrixInit(const SparseMatrix &matrix)
         }
     } else {
         for (long row = 0; row < nRows; ++row) {
-            ConstProxyVector<long> rowPattern = matrix.getRowPattern(row);
+            long matrixRow = row;
+            if (m_rowPermutation) {
+                matrixRow = rowRanks[matrixRow];
+            }
+
+            ConstProxyVector<long> rowPattern = matrix.getRowPattern(matrixRow);
             d_nnz[row] = rowPattern.size();
         }
     }
@@ -550,13 +565,23 @@ void SystemSolver::matrixInit(const SparseMatrix &matrix)
     std::vector<int> d_nnz(nCols);
 
     for (long row = 0; row < nRows; ++row) {
-        ConstProxyVector<long> rowPattern = matrix.getRowPattern(row);
+        long matrixRow = row;
+        if (m_rowPermutation) {
+            matrixRow = rowRanks[matrixRow];
+        }
+
+        ConstProxyVector<long> rowPattern = matrix.getRowPattern(matrixRow);
         d_nnz[row] = rowPattern.size();
     }
 
     // Create the matrix
     MatCreateSeqAIJ(PETSC_COMM_SELF, nRows, nCols, 0, d_nnz.data(), &m_A);
 #endif
+
+    // Cleanup
+    if (m_rowPermutation) {
+        ISRestoreIndices(m_rowPermutation, &rowRanks);
+    }
 }
 
 /*!
@@ -582,7 +607,7 @@ void SystemSolver::matrixFill(const SparseMatrix &matrix)
     const PetscInt *colInvRanks = nullptr;
     if (m_colPermutation) {
         ISInvertPermutation(m_colPermutation, nCols, &invColPermutation);
-        ISGetIndices(m_colPermutation, &colInvRanks);
+        ISGetIndices(invColPermutation, &colInvRanks);
     }
 
     // Create the matrix
@@ -632,7 +657,6 @@ void SystemSolver::matrixFill(const SparseMatrix &matrix)
     }
 
     if (m_colPermutation) {
-        ISRestoreIndices(m_colPermutation, &colInvRanks);
         ISDestroy(&invColPermutation);
     }
 }
