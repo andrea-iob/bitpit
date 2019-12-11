@@ -4503,7 +4503,7 @@ namespace bitpit {
                 }
                 if(lh < 0)
                     lh = - 1;
-                else if(lh > (int32_t)(getNumOctants() - 1))
+                else if(lh > (int64_t)(getNumOctants() - 1))
                     lh = getNumOctants() - 1;
 
                 if(m_rank == m_nproc - 1)
@@ -4571,7 +4571,7 @@ namespace bitpit {
                             //store the number of octants at the beginning of the buffer
                             sendBuffer << nofElementsFromSuccessiveToPrevious;
 
-                            for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
+                            for(int64_t i = lh - nofElementsFromSuccessiveToPrevious + 1; i <= lh; ++i){
                                 sendBuffer << m_octree.m_octants[i];
                             }
                             if(nofElementsFromSuccessiveToPrevious == headSize)
