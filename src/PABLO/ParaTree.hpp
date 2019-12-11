@@ -505,6 +505,9 @@ namespace bitpit {
         LoadBalanceRanges evalLoadBalanceRanges(dvector *weights);
         LoadBalanceRanges evalLoadBalanceRanges(uint8_t level, dvector *weights);
     private:
+        class DummyDataLBInterface : public bitpit::DataLBInterface<DummyDataLBInterface> {
+        };
+
         void 		privateLoadBalance(uint32_t* partition);
 
         LoadBalanceRanges evalLoadBalanceRanges(const uint32_t *updatedPartition);
@@ -571,6 +574,15 @@ namespace bitpit {
 
         template<class Impl>
         void privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partition);
+
+        template<class Impl>
+        void loadBalance(DataLBInterface<Impl> * userData, dvector* weight = NULL);
+
+        template<class Impl>
+        void loadBalance(DataLBInterface<Impl> * userData, uint8_t & level, dvector* weight = NULL);
+
+        template<class Impl>
+        void privateLoadBalance(DataLBInterface<Impl> * userData,uint32_t* partition);
 #endif
 
     };

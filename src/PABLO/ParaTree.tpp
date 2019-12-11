@@ -97,6 +97,19 @@ ParaTree::communicate(DataCommInterface<Impl> & userData){
 template<class Impl>
 void
 ParaTree::loadBalance(DataLBInterface<Impl> & userData, dvector* weight){
+    loadBalance(&userData, weight);
+}
+
+/** Distribute Load-Balancing the octants (with user defined weights) of the whole tree and data provided by the user
+* over the processes of the job following the Morton order.
+* Until loadBalance is not called for the first time the mesh is serial.
+* Even distribute data provided by the user between the processes.
+* \param[in] userData User interface to distribute the data during loadBalance.
+* \param[in] weight Pointer to a vector of weights of the local octants (weight=NULL is uniform distribution).
+*/
+template<class Impl>
+void
+ParaTree::loadBalance(DataLBInterface<Impl> * userData, dvector* weight){
     //Write info on log
     (*m_log) << "---------------------------------------------" << std::endl;
     (*m_log) << " LOAD BALANCE " << std::endl;
@@ -151,6 +164,20 @@ ParaTree::loadBalance(DataLBInterface<Impl> & userData, dvector* weight){
 template<class Impl>
 void
 ParaTree::loadBalance(DataLBInterface<Impl> & userData, uint8_t & level, dvector* weight){
+    loadBalance(&userData, level, weight);
+}
+
+/** Distribute Load-Balanced the octants (with user defined weights) of the whole tree and data provided by the user
+* over the processes of the job. Until loadBalance is not called for the first time the mesh is serial.
+* The families of octants of a desired level are retained compact on the same process.
+* Even distribute data provided by the user between the processes.
+* \param[in] userData User interface to distribute the data during loadBalance.
+* \param[in] level Number of level over the max depth reached in the tree at which families of octants are fixed compact on the same process (level=0 is classic LoadBalance).
+* \param[in] weight Pointer to a vector of weights of the local octants (weight=NULL is uniform distribution).
+*/
+template<class Impl>
+void
+ParaTree::loadBalance(DataLBInterface<Impl> * userData, uint8_t & level, dvector* weight){
 
     //Write info on log
     (*m_log) << "---------------------------------------------" << std::endl;
@@ -201,7 +228,22 @@ ParaTree::loadBalance(DataLBInterface<Impl> & userData, uint8_t & level, dvector
 */
 template<class Impl>
 void
-ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partition){
+ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData, uint32_t* partition){
+    privateLoadBalance(&userData, partition);
+}
+
+/**
+* Distribute Load-Balancing octants and user data of the whole
+* tree over the processes of the job following a given partition
+* distribution. Until loadBalance is not called for the first time
+* the mesh is serial.
+* \param[in] userData User data that will be distributed among the
+* processes.
+* \param[in] partition Target distribution of octants over processes.
+*/
+template<class Impl>
+void
+ParaTree::privateLoadBalance(DataLBInterface<Impl> * userData, uint32_t* partition){
 
     // Update load balance ranges
     std::unordered_map<int, std::array<uint32_t, 2>> sendRanges = evalLoadBalanceSendRanges(partition);
@@ -233,7 +275,9 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
         first = octantsCopy.end();
         last = octantsCopy.end();
 
-        userData.assign(stride,partition[m_rank]);
+        if (userData) {
+            userData->assign(stride,partition[m_rank]);
+        }
 
         //Update and build ghosts here
         updateLoadBalance();
@@ -332,12 +376,14 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
 
                     std::size_t buffSize = (std::size_t)nofElementsFromSuccessiveToPrevious * (std::size_t)Octant::getBinarySize();
                     //compute size of data in buffers
-                    if(userData.fixedSize()){
-                        buffSize +=  userData.fixedSize() * nofElementsFromSuccessiveToPrevious;
-                    }
-                    else{
-                        for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
-                            buffSize += userData.size(i);
+                    if (userData) {
+                        if(userData->fixedSize()){
+                            buffSize +=  userData->fixedSize() * nofElementsFromSuccessiveToPrevious;
+                        }
+                        else{
+                            for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
+                                buffSize += userData->size(i);
+                            }
                         }
                     }
                     //add room for uint32_t, number of octants in this buffer
@@ -349,7 +395,9 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
 
                     for(uint32_t i = (uint32_t)(lh - nofElementsFromSuccessiveToPrevious + 1); i <= (uint32_t)lh; ++i){
                         sendBuffer << m_octree.m_octants[i];
-                        userData.gather(sendBuffer,i);
+                        if (userData) {
+                            userData->gather(sendBuffer,i);
+                        }
                     }
                     if(nofElementsFromSuccessiveToPrevious == headSize)
                         break;
@@ -363,12 +411,14 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
                     nofElementsFromSuccessiveToPrevious = globalLastHead - (newPartitionRangeGlobalidx[p] - partition[p]);
                     std::size_t buffSize = (std::size_t)nofElementsFromSuccessiveToPrevious * (std::size_t)Octant::getBinarySize();
                     //compute size of data in buffers
-                    if(userData.fixedSize()){
-                        buffSize +=  userData.fixedSize() * nofElementsFromSuccessiveToPrevious;
-                    }
-                    else{
-                        for(int64_t i = lh - nofElementsFromSuccessiveToPrevious + 1; i <= lh; ++i){
-                            buffSize += userData.size(i);
+                    if (userData) {
+                        if(userData->fixedSize()){
+                            buffSize +=  userData->fixedSize() * nofElementsFromSuccessiveToPrevious;
+                        }
+                        else{
+                            for(int64_t i = lh - nofElementsFromSuccessiveToPrevious + 1; i <= lh; ++i){
+                                buffSize += userData->size(i);
+                            }
                         }
                     }
                     //add room for uint32_t, number of octants in this buffer
@@ -380,7 +430,9 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
 
                     for(int64_t i = lh - nofElementsFromSuccessiveToPrevious + 1; i <= lh; ++i){
                         sendBuffer << m_octree.m_octants[i];
-                        userData.gather(sendBuffer,i);
+                        if (userData) {
+                            userData->gather(sendBuffer,i);
+                        }
                     }
                     lh -= nofElementsFromSuccessiveToPrevious;
                     globalLastHead -= nofElementsFromSuccessiveToPrevious;
@@ -403,12 +455,14 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
 
                     std::size_t buffSize = (std::size_t)nofElementsFromPreviousToSuccessive * (std::size_t)Octant::getBinarySize();
                     //compute size of data in buffers
-                    if(userData.fixedSize()){
-                        buffSize +=  userData.fixedSize() * nofElementsFromPreviousToSuccessive;
-                    }
-                    else{
-                        for(uint32_t i = ft; i < ft + nofElementsFromPreviousToSuccessive; ++i){
-                            buffSize += userData.size(i);
+                    if (userData) {
+                        if(userData->fixedSize()){
+                            buffSize +=  userData->fixedSize() * nofElementsFromPreviousToSuccessive;
+                        }
+                        else{
+                            for(uint32_t i = ft; i < ft + nofElementsFromPreviousToSuccessive; ++i){
+                                buffSize += userData->size(i);
+                            }
                         }
                     }
                     //add room for uint32_t, number of octants in this buffer
@@ -420,7 +474,9 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
 
                     for(uint32_t i = ft; i < ft + nofElementsFromPreviousToSuccessive; ++i){
                         sendBuffer << m_octree.m_octants[i];
-                        userData.gather(sendBuffer,i);
+                        if (userData) {
+                            userData->gather(sendBuffer,i);
+                        }
                     }
                     if(nofElementsFromPreviousToSuccessive == tailSize)
                         break;
@@ -434,12 +490,14 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
                     uint32_t endOctants = ft + nofElementsFromPreviousToSuccessive - 1;
                     std::size_t buffSize = (std::size_t)nofElementsFromPreviousToSuccessive * (std::size_t)Octant::getBinarySize();
                     //compute size of data in buffers
-                    if(userData.fixedSize()){
-                        buffSize +=  userData.fixedSize() * nofElementsFromPreviousToSuccessive;
-                    }
-                    else{
-                        for(uint32_t i = ft; i <= endOctants; ++i){
-                            buffSize += userData.size(i);
+                    if (userData) {
+                        if(userData->fixedSize()){
+                            buffSize +=  userData->fixedSize() * nofElementsFromPreviousToSuccessive;
+                        }
+                        else{
+                            for(uint32_t i = ft; i <= endOctants; ++i){
+                                buffSize += userData->size(i);
+                            }
                         }
                     }
                     //add room for uint32_t, number of octants in this buffer
@@ -451,7 +509,9 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
 
                     for(uint32_t i = ft; i <= endOctants; ++i ){
                         sendBuffer << m_octree.m_octants[i];
-                        userData.gather(sendBuffer,i);
+                        if (userData) {
+                            userData->gather(sendBuffer,i);
+                        }
                     }
                     ft += nofElementsFromPreviousToSuccessive;
                     globalFirstTail += nofElementsFromPreviousToSuccessive;
@@ -491,18 +551,24 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
         uint32_t octCounter = 0;
         for(uint32_t i = headOffset; i < resEnd; ++i){
             m_octree.m_octants[octCounter] = m_octree.m_octants[i];
-            userData.move(i,octCounter);
+            if (userData) {
+                userData->move(i,octCounter);
+            }
             ++octCounter;
         }
         uint32_t newCounter = nofNewHead + nofNewTail + nofResidents;
         m_octree.m_octants.resize(newCounter, Octant(m_dim));
         m_octree.m_sizeOctants = m_octree.m_octants.size();
-        userData.resize(newCounter);
+        if (userData) {
+            userData->resize(newCounter);
+        }
         //MOVE RESIDENTS IN RIGHT POSITION
         uint32_t resCounter = nofNewHead + nofResidents - 1;
         for(uint32_t k = 0; k < nofResidents ; ++k){
             m_octree.m_octants[resCounter - k] = m_octree.m_octants[nofResidents - k - 1];
-            userData.move(nofResidents - k - 1,resCounter - k);
+            if (userData) {
+                userData->move(nofResidents - k - 1,resCounter - k);
+            }
         }
 
         //READ BUFFERS AND BUILD NEW OCTANTS
@@ -517,7 +583,9 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
             }
             for(int i = nofNewPerProc - 1; i >= 0; --i){
                 recvBuffer >> m_octree.m_octants[newCounter];
-                userData.scatter(recvBuffer,newCounter);
+                if (userData) {
+                    userData->scatter(recvBuffer,newCounter);
+                }
                 ++newCounter;
             }
         }
@@ -525,7 +593,9 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
         octvector(m_octree.m_octants).swap(m_octree.m_octants);
         m_octree.m_sizeOctants = m_octree.m_octants.size();
 
-        userData.shrink();
+        if (userData) {
+            userData->shrink();
+        }
 
         delete [] newPartitionRangeGlobalidx; newPartitionRangeGlobalidx = NULL;
 
@@ -533,7 +603,9 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> & userData,uint32_t* partitio
         updateLoadBalance();
         computeGhostHalo();
         uint32_t nofGhosts = getNumGhosts();
-        userData.resizeGhost(nofGhosts);
+        if (userData) {
+            userData->resizeGhost(nofGhosts);
+        }
 
     }
 }
