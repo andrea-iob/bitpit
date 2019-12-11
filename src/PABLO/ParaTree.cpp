@@ -4551,15 +4551,14 @@ namespace bitpit {
                 uint64_t local_num_octants = getNumOctants();
                 m_errorFlag = MPI_Allreduce(&local_num_octants,&m_globalNumOctants,1,MPI_UINT64_T,MPI_SUM,m_comm);
                 //update m_partitionRangeGlobalIdx
-                uint64_t* rbuff = new uint64_t[m_nproc];
-                m_errorFlag = MPI_Allgather(&local_num_octants,1,MPI_UINT64_T,rbuff,1,MPI_UINT64_T,m_comm);
+                std::vector<uint64_t> rbuff(m_nproc);
+                m_errorFlag = MPI_Allgather(&local_num_octants,1,MPI_UINT64_T,rbuff.data(),1,MPI_UINT64_T,m_comm);
                 for(int p = 0; p < m_nproc; ++p){
                     m_partitionRangeGlobalIdx[p] = 0;
                     for(int pp = 0; pp <=p; ++pp)
                         m_partitionRangeGlobalIdx[p] += rbuff[pp];
                     --m_partitionRangeGlobalIdx[p];
                 }
-                delete [] rbuff; rbuff = NULL;
             }
 #endif
     }
@@ -4624,23 +4623,23 @@ namespace bitpit {
         else{
 
             int weightSize = weight->size();
-            double* gweight;
-            double* lweight = new double[weightSize];
 
+            std::vector<double> lweight(weightSize);
             for (unsigned int i=0; i<weight->size(); i++){
                 lweight[i] = (*weight)[i];
             }
 
-            int *oldpartition = new int[m_nproc];
-            int *displays = new int[m_nproc];
-            MPI_Allgather(&weightSize,1,MPI_INT,oldpartition,1,MPI_INT,m_comm);
+            std::vector<int> oldpartition(m_nproc);
+            std::vector<int> displays(m_nproc);
+            MPI_Allgather(&weightSize,1,MPI_INT,oldpartition.data(),1,MPI_INT,m_comm);
             int globalNofOctant = 0;
             for(int i = 0; i < m_nproc; ++i){
                 displays[i] = globalNofOctant;
                 globalNofOctant += oldpartition[i];
             }
-            gweight = new double[globalNofOctant];
-            MPI_Allgatherv(lweight,weightSize,MPI_DOUBLE,gweight,oldpartition,displays,MPI_DOUBLE,m_comm);
+            std::vector<double> gweight(globalNofOctant);
+            MPI_Allgatherv(lweight.data(),weightSize,MPI_DOUBLE,gweight.data(),oldpartition.data(),
+                           displays.data(),MPI_DOUBLE,m_comm);
 
             double division_result = 0;
             double global_weight = 0.0;
@@ -4669,11 +4668,6 @@ namespace bitpit {
                 iproc++;
             }
             partition[m_nproc-1] = globalNofOctant - tot;
-
-            delete [] oldpartition;
-            delete [] displays;
-            delete [] lweight;
-            delete [] gweight;
 
             //TODO CHECK OLD ALGORITHM
             //		double division_result = 0;
@@ -4834,24 +4828,24 @@ namespace bitpit {
     ParaTree::computePartition(uint32_t* partition, uint8_t & level_, dvector* weight) {
 
         uint8_t level = uint8_t(min(int(max(int(m_maxDepth) - int(level_), int(1))) , int(TreeConstants::MAX_LEVEL)));
-        uint32_t* partition_temp = new uint32_t[m_nproc];
-        uint8_t* boundary_proc = new uint8_t[m_nproc-1];
         uint8_t dimcomm, indcomm;
-        uint8_t* glbdimcomm = new uint8_t[m_nproc];
-        uint8_t* glbindcomm = new uint8_t[m_nproc];
+        std::vector<uint32_t> partition_temp(m_nproc);
+        std::vector<uint8_t> boundary_proc(m_nproc-1);
+        std::vector<uint8_t> glbdimcomm(m_nproc);
+        std::vector<uint8_t> glbindcomm(m_nproc);
 
         uint32_t Dh = uint32_t(pow(double(2),double(TreeConstants::MAX_LEVEL-level)));
         uint32_t istart, nocts, rest, forw, backw;
         uint32_t i = 0, iproc, j;
         uint64_t sum;
         int32_t* pointercomm;
-        int32_t* deplace = new int32_t[m_nproc-1];
+        std::vector<int32_t> deplace(m_nproc-1);
 
         if (weight==NULL){
-            computePartition(partition_temp);
+            computePartition(partition_temp.data());
         }
         else{
-            computePartition(partition_temp, weight);
+            computePartition(partition_temp.data(), weight);
         }
 
         j = 0;
@@ -4909,8 +4903,8 @@ namespace bitpit {
             }
         }
 
-        m_errorFlag = MPI_Allgather(&dimcomm,1,MPI_UINT8_T,glbdimcomm,1,MPI_UINT8_T,m_comm);
-        m_errorFlag = MPI_Allgather(&indcomm,1,MPI_UINT8_T,glbindcomm,1,MPI_UINT8_T,m_comm);
+        m_errorFlag = MPI_Allgather(&dimcomm,1,MPI_UINT8_T,glbdimcomm.data(),1,MPI_UINT8_T,m_comm);
+        m_errorFlag = MPI_Allgather(&indcomm,1,MPI_UINT8_T,glbindcomm.data(),1,MPI_UINT8_T,m_comm);
         for (iproc=0; iproc<(uint32_t)(m_nproc); iproc++){
             pointercomm = &deplace[glbindcomm[iproc]];
             m_errorFlag = MPI_Bcast(pointercomm, glbdimcomm[iproc], MPI_INT32_T, iproc, m_comm);
@@ -4924,12 +4918,6 @@ namespace bitpit {
             if (iproc !=0)
                 partition[iproc] = partition[iproc] - deplace[iproc-1];
         }
-
-        delete [] partition_temp; partition_temp = NULL;
-        delete [] boundary_proc; boundary_proc = NULL;
-        delete [] glbdimcomm; glbdimcomm = NULL;
-        delete [] glbindcomm; glbindcomm = NULL;
-        delete [] deplace; deplace = NULL;
     }
 
     /*! Update the distributed octree after a LoadBalance over the processes.
@@ -4940,10 +4928,10 @@ namespace bitpit {
         m_octree.m_sizeOctants = m_octree.m_octants.size();
 
         m_octree.updateLocalMaxDepth();
-        uint64_t* rbuff = new uint64_t[m_nproc];
+        std::vector<uint64_t> rbuff(m_nproc);
 
         uint64_t local_num_octants = getNumOctants();
-        m_errorFlag = MPI_Allgather(&local_num_octants,1,MPI_UINT64_T,rbuff,1,MPI_UINT64_T,m_comm);
+        m_errorFlag = MPI_Allgather(&local_num_octants,1,MPI_UINT64_T,rbuff.data(),1,MPI_UINT64_T,m_comm);
         for (int iproc=0; iproc<m_nproc; iproc++){
             m_partitionRangeGlobalIdx0[iproc] = m_partitionRangeGlobalIdx[iproc];
         }
@@ -4970,8 +4958,6 @@ namespace bitpit {
         uint64_t firstDescMorton = m_octree.getFirstDescMorton();
         m_errorFlag = MPI_Allgather(&firstDescMorton,1,MPI_UINT64_T,m_partitionFirstDesc.data(),1,MPI_UINT64_T,m_comm);
         m_serial = false;
-
-        delete [] rbuff; rbuff = NULL;
     }
 
     /*! Build the structure with the information about the first layer of ghost octants, partition boundary octants

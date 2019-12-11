@@ -117,18 +117,15 @@ ParaTree::loadBalance(DataLBInterface<Impl> * userData, dvector* weight){
     m_lastOp = OP_LOADBALANCE;
     if (m_nproc>1){
 
-        uint32_t* partition = new uint32_t [m_nproc];
+        std::vector<uint32_t> partition(m_nproc);
         if (weight == NULL)
-            computePartition(partition);
+            computePartition(partition.data());
         else
-            computePartition(partition, weight);
+            computePartition(partition.data(), weight);
 
         weight = NULL;
 
-        privateLoadBalance(userData, partition);
-
-        delete [] partition;
-        partition = NULL;
+        privateLoadBalance(userData, partition.data());
 
         //Write info of final partition on log
         (*m_log) << " " << std::endl;
@@ -186,13 +183,10 @@ ParaTree::loadBalance(DataLBInterface<Impl> * userData, uint8_t & level, dvector
     m_lastOp = OP_LOADBALANCE;
     if (m_nproc>1){
 
-        uint32_t* partition = new uint32_t [m_nproc];
-        computePartition(partition, level, weight);
+        std::vector<uint32_t> partition(m_nproc);
+        computePartition(partition.data(), level, weight);
 
-        privateLoadBalance(userData, partition);
-
-        delete [] partition;
-        partition = NULL;
+        privateLoadBalance(userData, partition.data());
 
         //Write info of final partition on log
         (*m_log) << " " << std::endl;
@@ -297,7 +291,7 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> * userData, uint32_t* partiti
         m_octree.m_sizeGhosts = 0;
         //compute new partition range globalidx
         assert(m_nproc > 0);
-        uint64_t* newPartitionRangeGlobalidx = new uint64_t[m_nproc];
+        std::vector<uint64_t> newPartitionRangeGlobalidx(m_nproc);
         for(int p = 0; p < m_nproc; ++p){
             newPartitionRangeGlobalidx[p] = 0;
             for(int pp = 0; pp <= p; ++pp)
@@ -596,8 +590,6 @@ ParaTree::privateLoadBalance(DataLBInterface<Impl> * userData, uint32_t* partiti
         if (userData) {
             userData->shrink();
         }
-
-        delete [] newPartitionRangeGlobalidx; newPartitionRangeGlobalidx = NULL;
 
         //Update and ghosts here
         updateLoadBalance();
