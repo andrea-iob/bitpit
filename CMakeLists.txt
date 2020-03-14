@@ -122,21 +122,6 @@ function(addModuleIncludeDirectories MODULE_NAME)
 endfunction()
 
 #------------------------------------------------------------------------------------#
-# MPI
-#------------------------------------------------------------------------------------#
-if (ENABLE_MPI)
-    find_package(MPI)
-
-    if(MPI_CXX_COMPILE_FLAGS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MPI_CXX_COMPILE_FLAGS}")
-    endif()
-
-    if(MPI_CXX_LINK_FLAGS)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS}")
-    endif()
-endif()
-
-#------------------------------------------------------------------------------------#
 # Link Time Optimization (LTO)
 #------------------------------------------------------------------------------------#
 
@@ -310,10 +295,28 @@ set(LEVELSET_DEPS "common;communications;SA;CG;surfunstructured;voloctree;volcar
 set(POD_DEPS "IO;common;containers;voloctree")
 
 #------------------------------------------------------------------------------------#
-# MPI-only modules
+# Modules external dependecies
 #------------------------------------------------------------------------------------#
-set(MPI_ONLY_MODULE_LIST "")
-list(APPEND MPI_ONLY_MODULE_LIST "communications")
+if (ENABLE_MPI)
+    set(COMMON_EXTERNAL_DEPS "MPI")
+endif()
+set(OPERATORS_EXTERNAL_DEPS "")
+set(CONTAINERS_EXTERNAL_DEPS "")
+set(IO_EXTERNAL_DEPS "LibXml2")
+set(COMMUNICATIONS_EXTERNAL_DEPS "MPI")
+set(LA_EXTERNAL_DEPS "PETSc")
+set(SA_EXTERNAL_DEPS "")
+set(CG_EXTERNAL_DEPS "LAPACKE")
+set(PABLO_EXTERNAL_DEPS "")
+set(PATCHKERNEL_EXTERNAL_DEPS "")
+set(SURFUNSTRUCTURED_EXTERNAL_DEPS "")
+set(VOLCARTESIAN_EXTERNAL_DEPS "")
+set(VOLOCTREE_EXTERNAL_DEPS "")
+set(VOLUNSTRUCTURED_EXTERNAL_DEPS "")
+set(RBF_EXTERNAL_DEPS "LAPACKE")
+set(DISCRETIZATION_EXTERNAL_DEPS "")
+set(LEVELSET_EXTERNAL_DEPS "")
+set(POD_EXTERNAL_DEPS "LAPACKE")
 
 #------------------------------------------------------------------------------------#
 # Internal dependencies
@@ -321,14 +324,27 @@ list(APPEND MPI_ONLY_MODULE_LIST "communications")
 
 # If building without MPI remove dependecies on MPI-only modules
 if (NOT ENABLE_MPI)
+    set(MPI_ONLY_MODULE_LIST "")
     foreach (MODULE_NAME IN LISTS BITPIT_MODULE_LIST)
         string(TOUPPER ${MODULE_NAME} UPPER_MODULE_NAME)
-        list(LENGTH ${UPPER_MODULE_NAME}_DEPS DEPENDENCY_COUNT)
-        if (${DEPENDENCY_COUNT} GREATER 0)
-            list(REMOVE_ITEM ${UPPER_MODULE_NAME}_DEPS ${MPI_ONLY_MODULE_LIST})
+        list (FIND ${UPPER_MODULE_NAME}_EXTERNAL_DEPS "MPI" _mpi_dep_index)
+        if (${_mpi_dep_index} GREATER -1)
+            LIST(APPEND MPI_ONLY_MODULE_LIST ${MODULE_NAME})
         endif()
-        unset(UPPER_MODULE_NAME)
     endforeach()
+
+    if (NOT ${MPI_ONLY_MODULE_LIST} STREQUAL "")
+        foreach (MODULE_NAME IN LISTS BITPIT_MODULE_LIST)
+            string(TOUPPER ${MODULE_NAME} UPPER_MODULE_NAME)
+            list(LENGTH ${UPPER_MODULE_NAME}_DEPS DEPENDENCY_COUNT)
+            if (${DEPENDENCY_COUNT} GREATER 0)
+                list(REMOVE_ITEM ${UPPER_MODULE_NAME}_DEPS ${MPI_ONLY_MODULE_LIST})
+            endif()
+            unset(UPPER_MODULE_NAME)
+        endforeach()
+    endif()
+
+    unset(MPI_ONLY_MODULE_LIST)
 endif()
 
 # Initialize module state
@@ -374,49 +390,139 @@ set(${OPERATORS_MODULE_ENABLED} 1 CACHE INTERNAL "Request building operators mod
 # External dependecies
 #------------------------------------------------------------------------------------#
 
+# List of dependencies
+set(CBLAS_DEPS "BLAS")
+set(LAPACK_DEPS "BLAS")
+set(LAPACKE_DEPS "LAPACK")
+if (ENABLE_MPI)
+    set(PETSC_DEPS "MPI;LAPACK")
+else()
+    set(PETSC_DEPS "LAPACK")
+endif()
+
+set(EXTERNAL_DEPS_PROCESS_LIST "")
+foreach(MODULE_NAME IN LISTS BITPIT_MODULE_LIST)
+    isModuleEnabled(${MODULE_NAME} MODULE_ENABLED)
+    if(MODULE_ENABLED)
+        string(TOUPPER ${MODULE_NAME} UPPER_MODULE_NAME)
+        LIST(APPEND EXTERNAL_DEPS_PROCESS_LIST ${${UPPER_MODULE_NAME}_EXTERNAL_DEPS})
+    endif()
+endforeach()
+
+set(EXTERNAL_DEPS "")
+set(PROCESS_EXTERNAL_DEPS 1)
+while (${PROCESS_EXTERNAL_DEPS} GREATER 0)
+    set(EXTERNAL_DEPS_PROCESS_NEXT_LIST "")
+    foreach(DEP_NAME IN LISTS EXTERNAL_DEPS_PROCESS_LIST)
+        LIST(APPEND EXTERNAL_DEPS ${DEP_NAME})
+        string(TOUPPER ${DEP_NAME} UPPER_DEP_NAME)
+        if(DEFINED ${UPPER_DEP_NAME}_DEPS)
+            LIST(APPEND EXTERNAL_DEPS_PROCESS_NEXT_LIST ${${UPPER_DEP_NAME}_DEPS})
+        endif()
+    endforeach()
+
+    set(EXTERNAL_DEPS_PROCESS_LIST ${EXTERNAL_DEPS_PROCESS_NEXT_LIST})
+    unset(EXTERNAL_DEPS_PROCESS_NEXT_LIST)
+    list(LENGTH EXTERNAL_DEPS_PROCESS_LIST PROCESS_EXTERNAL_DEPS)
+endwhile()
+unset(PROCESS_EXTERNAL_DEPS)
+
+list(REVERSE EXTERNAL_DEPS)
+list(REMOVE_DUPLICATES EXTERNAL_DEPS)
+
+# Enable additional languages
+set(BLAS_LANGUAGES "Fortran")
+set(CBLAS_LANGUAGES "C")
+set(LAPACK_LANGUAGES "Fortran")
+set(LAPACKE_LANGUAGES "C")
+set(PETSC_LANGUAGES "C")
+
+foreach(DEP_NAME IN LISTS EXTERNAL_DEPS)
+    if(DEFINED ${DEP_NAME}_LANGUAGES)
+        string(TOUPPER ${DEP_NAME} UPPER_DEP_NAME)
+        foreach(LANGUAGE IN LISTS ${UPPER_DEP_NAME}_LANGUAGES)
+            enable_language(${LANGUAGE})
+        endforeach()
+    endif()
+endforeach()
+
+# Add external dependencies
 set(BITPIT_EXTERNAL_DEPENDENCIES "")
 set(BITPIT_EXTERNAL_LIBRARIES "")
 set(BITPIT_EXTERNAL_INCLUDE_DIRS "")
 
-isModuleEnabled("CG" MODULE_CG_ENABLED)
-isModuleEnabled("LA" MODULE_LA_ENABLED)
-isModuleEnabled("RBF" MODULE_RBF_ENABLED)
-isModuleEnabled("POD" MODULE_POD_ENABLED)
-if (MODULE_CG_ENABLED OR MODULE_LA_ENABLED OR MODULE_RBF_ENABLED OR MODULE_POD_ENABLED)
-	enable_language(Fortran)
-	enable_language(C)
+list(FIND EXTERNAL_DEPS "MPI" _MPI_index)
+if (${_MPI_index} GREATER -1)
+    find_package(MPI)
 
-	set(BLAS_VENDOR "All" CACHE STRING "If set, checks only the specified vendor. If not set, checks all the possibilities")
-	mark_as_advanced(BLAS_VENDOR)
-	set(BLA_VENDOR "${BLAS_VENDOR}")
-	set(LAPACKE_STATIC 0 CACHE BOOL "Require LAPACKE static libraries")
-	mark_as_advanced(LAPACKE_STATIC)
+    if(MPI_CXX_COMPILE_FLAGS)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${MPI_CXX_COMPILE_FLAGS}")
+    endif()
 
-	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/LAPACKE/cmake")
+    if(MPI_CXX_LINK_FLAGS)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_CXX_LINK_FLAGS}")
+    endif()
 
-	find_package(LAPACK REQUIRED)
-	find_package(LAPACKE REQUIRED)
-
-	set(LAPACKE_PRIVATE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/LAPACKE/include")
-
-	list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "LAPACK")
-	list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "LAPACKE")
-	list (APPEND BITPIT_EXTERNAL_LIBRARIES "${LAPACKE_LIBRARIES}" "${LAPACK_LIBRARIES}")
-	list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${LAPACKE_PRIVATE_INCLUDE_DIR}" "${LAPACKE_INCLUDE_DIRS}" "${LAPACK_INCLUDE_DIRS}")
+    list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "MPI")
+    list (APPEND BITPIT_EXTERNAL_LIBRARIES "${MPI_CXX_LIBRARIES}")
+    list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${MPI_CXX_INCLUDE_PATH}" )
 endif()
+unset(_MPI_index)
 
-isModuleEnabled("IO" MODULE_IO_ENABLED)
-if (MODULE_IO_ENABLED)
+list(FIND EXTERNAL_DEPS "BLAS" _BLAS_index)
+if (${_BLAS_index} GREATER -1)
+    set(BLAS_VENDOR "All" CACHE STRING "If set, checks only the specified vendor. If not set, checks all the possibilities")
+    mark_as_advanced(BLAS_VENDOR)
+    set(BLA_VENDOR "${BLAS_VENDOR}")
+
+    find_package(BLAS REQUIRED)
+
+    list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "BLAS")
+    list (APPEND BITPIT_EXTERNAL_LIBRARIES "${BLAS_LIBRARIES}")
+    list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${BLAS_INCLUDE_DIRS}")
+endif()
+unset(_BLAS_index)
+
+list(FIND EXTERNAL_DEPS "LAPACK" _LAPACK_index)
+if (${_LAPACK_index} GREATER -1)
+    find_package(LAPACK REQUIRED)
+
+    list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "LAPACK")
+    list (APPEND BITPIT_EXTERNAL_LIBRARIES "${LAPACK_LIBRARIES}")
+    list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${LAPACK_INCLUDE_DIRS}")
+endif()
+unset(_LAPACK_index)
+
+list(FIND EXTERNAL_DEPS "LAPACKE" _LAPACKE_index)
+if (${_LAPACKE_index} GREATER -1)
+    set(LAPACKE_STATIC 0 CACHE BOOL "Require LAPACKE static libraries")
+    mark_as_advanced(LAPACKE_STATIC)
+
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/LAPACKE/cmake")
+
+    find_package(LAPACKE REQUIRED)
+
+    set(LAPACKE_PRIVATE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/LAPACKE/include")
+
+    list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "LAPACKE")
+    list (APPEND BITPIT_EXTERNAL_LIBRARIES "${LAPACKE_LIBRARIES}")
+    list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${LAPACKE_PRIVATE_INCLUDE_DIR}" "${LAPACKE_INCLUDE_DIRS}")
+endif()
+unset(_LAPACKE_index)
+
+list(FIND EXTERNAL_DEPS "LibXml2" _LibXml2_index)
+if (${_LibXml2_index} GREATER -1)
     find_package(LibXml2 REQUIRED)
 
     list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "LibXml2")
     list (APPEND BITPIT_EXTERNAL_LIBRARIES "${LIBXML2_LIBRARIES}")
     list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${LIBXML2_INCLUDE_DIR}")
 endif()
+unset(_LibXml2_index)
 
-isModuleEnabled("LA" MODULE_LA_ENABLED)
-if (MODULE_LA_ENABLED)
-    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/external/PETSc/cmake")
+list(FIND EXTERNAL_DEPS "PETSc" _PETSc_index)
+if (${_PETSc_index} GREATER -1)
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/external/PETSc/cmake")
 
     set(PETSC_DIR "" CACHE PATH "Directory in which PETSc resides")
     set(PETSC_ARCH "arch-linux2-c" CACHE STRING "Build architecture")
@@ -427,12 +533,7 @@ if (MODULE_LA_ENABLED)
     list (APPEND BITPIT_EXTERNAL_LIBRARIES "${PETSC_LIBRARIES}")
     list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${PETSC_INCLUDES}" )
 endif()
-
-if (ENABLE_MPI)
-    list (APPEND BITPIT_EXTERNAL_DEPENDENCIES "MPI")
-    list (APPEND BITPIT_EXTERNAL_LIBRARIES "${MPI_CXX_LIBRARIES}")
-    list (APPEND BITPIT_EXTERNAL_INCLUDE_DIRS "${MPI_CXX_INCLUDE_PATH}" )
-endif()
+unset(_PETSc_index)
 
 #------------------------------------------------------------------------------------#
 # Compiler settings
