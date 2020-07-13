@@ -168,7 +168,7 @@ void PatchKernel::setHaloSize(std::size_t haloSize)
 	_setHaloSize(haloSize);
 
 	if (isPartitioned()) {
-		updateGhostCellExchangeInfo();
+		updateGhostExchangeInfo();
 	}
 }
 
@@ -204,6 +204,258 @@ std::size_t PatchKernel::_getMaxHaloSize()
 void PatchKernel::_setHaloSize(std::size_t haloSize)
 {
 	BITPIT_UNUSED(haloSize);
+}
+
+/*!
+	Converts an internal vertex to a ghost vertex.
+
+	\param[in] id is the index of the vertex
+	\param[in] ownerRank is the owner of the vertex
+*/
+PatchKernel::VertexIterator PatchKernel::internalVertex2GhostVertex(long id, int ownerRank)
+{
+	if (!isExpert()) {
+		return m_vertices.end();
+	}
+
+	// Swap the vertex with the last internal vertex
+	if (id != m_lastInternalVertexId) {
+		m_vertices.swap(id, m_lastInternalVertexId);
+	}
+
+	// Get the iterator pointing to the updated position of the vertex
+	VertexIterator iterator = m_vertices.find(id);
+
+	// Update the interior flag
+	iterator->setInterior(false);
+
+	// Update vertex counters
+	--m_nInternalVertices;
+	++m_nGhostVertices;
+
+	// Update the last internal and first ghost markers
+	m_firstGhostVertexId = id;
+	if (m_nInternalVertices == 0) {
+		m_lastInternalVertexId = Vertex::NULL_ID;
+	} else {
+		m_lastInternalVertexId = m_vertices.getSizeMarker(m_nInternalVertices - 1, Vertex::NULL_ID);
+	}
+
+	// Set ghost owner
+	setGhostVertexOwner(id, ownerRank);
+
+	// Return the iterator to the new position
+	return iterator;
+}
+
+/*!
+	Converts a ghost vertex to an internal vertex.
+
+	\param[in] id is the index of the vertex
+*/
+PatchKernel::VertexIterator PatchKernel::ghostVertex2InternalVertex(long id)
+{
+	if (!isExpert()) {
+		return m_vertices.end();
+	}
+
+	// Swap the vertex with the first ghost
+	if (id != m_firstGhostVertexId) {
+		m_vertices.swap(id, m_firstGhostVertexId);
+	}
+
+	// Get the iterator pointing to the updated position of the vertex
+	VertexIterator iterator = m_vertices.find(id);
+
+	// Update the interior flag
+	iterator->setInterior(true);
+
+	// Update vertex counters
+	++m_nInternalVertices;
+	--m_nGhostVertices;
+
+	// Update the last internal and first ghost markers
+	m_lastInternalVertexId = id;
+	if (m_nGhostVertices == 0) {
+		m_firstGhostVertexId = Vertex::NULL_ID;
+	} else {
+		VertexIterator firstGhostVertexIterator = iterator;
+		++firstGhostVertexIterator;
+		m_firstGhostVertexId = firstGhostVertexIterator->getId();
+	}
+
+	// Unset ghost owner
+	unsetGhostVertexOwner(id);
+
+	// Return the iterator to the new position
+	return iterator;
+}
+
+/*!
+	Gets the number of ghost vertices in the patch.
+
+	\return The number of ghost vertices in the patch
+*/
+long PatchKernel::getGhostVertexCount() const
+{
+	return m_nGhostVertices;
+}
+
+/*!
+	Gets a reference to the first ghost vertex.
+
+	\return A reference to the first ghost vertex.
+*/
+Vertex & PatchKernel::getFirstGhostVertex()
+{
+	return m_vertices[m_firstGhostVertexId];
+}
+
+/*!
+	Gets a constant reference to the first ghost vertex.
+
+	\return A constant reference to the first ghost vertex.
+*/
+const Vertex & PatchKernel::getFirstGhostVertex() const
+{
+	return m_vertices[m_firstGhostVertexId];
+}
+
+/*!
+	Resore the vertex with the specified id.
+
+	The kernel should already contain the vertex, only the contents of the
+	vertex will be updated.
+
+	\param coords are the coordinates of the vertex
+	\param rank is the rank that owns the vertex that will be restored
+	\param id is the id of the vertex that will be restored
+	\return An iterator pointing to the restored vertex.
+*/
+PatchKernel::VertexIterator PatchKernel::restoreVertex(const std::array<double, 3> &coords, int rank, long id)
+{
+	if (!isExpert()) {
+		return vertexEnd();
+	}
+
+	VertexIterator iterator = m_vertices.find(id);
+	if (iterator == m_vertices.end()) {
+		throw std::runtime_error("Unable to restore the specified vertex: the kernel doesn't contain an entry for that vertex.");
+	}
+
+	// There is not need to set the id of the vertex as assigned, because
+	// also the index generator will be restored.
+	if (rank == getRank()) {
+		_restoreInternalVertex(iterator, coords);
+	} else {
+		_restoreGhostVertex(iterator, coords, rank);
+	}
+
+	return iterator;
+}
+
+/*!
+	Internal function to restore a ghost vertex.
+
+	The kernel should already contain the vertex, only the contents of the
+	vertex will be updated.
+
+	\param iterator is an iterator pointing to the vertex to restore
+	\param coords are the coordinates of the vertex
+	\param rank is the rank that owns the vertex that will be restored
+*/
+void PatchKernel::_restoreGhostVertex(const VertexIterator &iterator, const std::array<double, 3> &coords, int rank)
+{
+	// Restore vertex
+	Vertex &vertex = *iterator;
+	vertex.initialize(iterator.getId(), coords, false);
+	m_nGhostVertices++;
+
+	// Set owner
+	setGhostVertexOwner(vertex.getId(), rank);
+}
+
+/*!
+	Internal function to delete a ghost vertex.
+
+	\param id is the id of the vertex
+	\param delayed is true a delayed delete will be performed
+*/
+void PatchKernel::_deleteGhostVertex(long id, bool delayed)
+{
+	// Unset ghost owner
+	unsetGhostVertexOwner(id);
+
+	// Delete vertex
+	m_vertices.erase(id, delayed);
+	m_nGhostVertices--;
+	if (id == m_firstGhostVertexId) {
+		updateFirstGhostVertexId();
+	}
+}
+
+/*!
+    Returns iterator to the first ghost vertex within the vertex list.
+
+    \result An iterator to the first ghost vertex.
+*/
+PatchKernel::VertexIterator PatchKernel::ghostVertexBegin()
+{
+	if (m_nGhostVertices > 0) {
+		return m_vertices.find(m_firstGhostVertexId);
+	} else {
+		return m_vertices.end();
+	}
+}
+
+/*!
+	Returns iterator to the end of the list of ghost vertices.
+
+	\result An iterator to the end of the list of ghost vertex.
+*/
+PatchKernel::VertexIterator PatchKernel::ghostVertexEnd()
+{
+	return m_vertices.end();
+}
+
+/*!
+    Returns a constant iterator to the first ghost vertices within the vertex
+    list.
+
+    \result A constant iterator to the first ghost vertex.
+*/
+PatchKernel::VertexConstIterator PatchKernel::ghostVertexConstBegin() const
+{
+	if (m_nGhostVertices > 0) {
+		return m_vertices.find(m_firstGhostVertexId);
+	} else {
+		return m_vertices.cend();
+	}
+}
+
+/*!
+	Returns a constant iterator to the end of the list of ghost vertices.
+
+	\result A constant iterator to the end of the list of ghost vertex.
+*/
+PatchKernel::VertexConstIterator PatchKernel::ghostVertexConstEnd() const
+{
+	return m_vertices.cend();
+}
+
+/*!
+	Updates the id of the first ghost vertex.
+*/
+void PatchKernel::updateFirstGhostVertexId()
+{
+	if (m_nGhostVertices == 0) {
+		m_firstGhostVertexId = Vertex::NULL_ID;
+	} else if (m_nInternalVertices == 0) {
+		VertexIterator firstGhostVertexItr = vertexBegin();
+		m_firstGhostVertexId = firstGhostVertexItr->getId();
+	} else {
+		m_firstGhostVertexId = m_vertices.getSizeMarker(m_nInternalVertices, Vertex::NULL_ID);
+	}
 }
 
 /*!
@@ -1380,7 +1632,7 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter(bool trackPartitioni
             ghostCellOwnershipChanges = _partitioningAlter_evalGhostCellOwnershipChanges();
         }
     } else {
-        _partitioningAlter_deleteGhostCells();
+        _partitioningAlter_deleteGhosts();
     }
 
     // Communicate patch data structures
@@ -1566,7 +1818,7 @@ void PatchKernel::_partitioningAlter_applyGhostCellOwnershipChanges(int sendRank
 /*!
     Delete ghosts.
 */
-void PatchKernel::_partitioningAlter_deleteGhostCells()
+void PatchKernel::_partitioningAlter_deleteGhosts()
 {
     // Delete ghost cells
     std::unordered_set<long> involvedInterfaces;
@@ -1597,6 +1849,11 @@ void PatchKernel::_partitioningAlter_deleteGhostCells()
 
     // Delete vertices no longer used
     deleteOrphanVertices();
+
+    // Convert all ghost vertices to internal vertices
+    while (getGhostVertexCount() > 0) {
+        ghostVertex2InternalVertex(m_firstGhostVertexId);
+    }
 }
 
 /*!
@@ -2533,6 +2790,13 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_receiveCells(const s
             verticesBuffer >> vertex;
             long originalVertexId = vertex.getId();
 
+            // Set vertex interior flag
+            //
+            // All new vertices will be temporarly added as internal vertices,
+            // is needed they will be converted to ghost vertices when updating
+            // ghost information.
+            vertex.setInterior(true);
+
             // Check if the vertex is a duplicate
             //
             // Only frame and halo vertices may be a duplicate.
@@ -2921,6 +3185,22 @@ int PatchKernel::getCellHaloLayer(long id) const
 }
 
 /*!
+	Gets the rank of the processor that owns the specified vertex.
+
+	\param id is the id of the requested vertex
+	\result The rank that owns the specified vertex.
+*/
+int PatchKernel::getVertexRank(long id) const
+{
+	auto vertexOwner = m_ghostVertexOwners.find(id);
+	if (vertexOwner == m_ghostVertexOwners.end()) {
+		return m_rank;
+	} else {
+		return vertexOwner->second;
+	}
+}
+
+/*!
 	Check if the processors associated to the specified rank is a neighbour.
 
 	\param rank is the rank associated to the processor
@@ -3044,6 +3324,48 @@ const std::vector<long> & PatchKernel::getGhostExchangeSources(int rank) const
 	return getGhostCellExchangeSources(rank);
 }
 
+
+/*!
+	Sets the owner of the specified ghost vertex.
+
+	\param id is the id of the ghost vertex
+	\param rank is the rank of the processors that owns the ghost vertex
+*/
+void PatchKernel::setGhostVertexOwner(int id, int rank)
+{
+	auto ghostVertexOwnerItr = m_ghostVertexOwners.find(id);
+	if (ghostVertexOwnerItr != m_ghostVertexOwners.end()) {
+		ghostVertexOwnerItr->second = rank;
+	} else {
+		m_ghostVertexOwners.insert({id, rank});
+	}
+}
+
+/*!
+	Unsets the owner of the specified ghost vertex.
+
+	\param id is the id of the ghost vertex
+*/
+void PatchKernel::unsetGhostVertexOwner(int id)
+{
+	auto ghostVertexOwnerItr = m_ghostVertexOwners.find(id);
+	if (ghostVertexOwnerItr == m_ghostVertexOwners.end()) {
+		return;
+	}
+
+	m_ghostVertexOwners.erase(ghostVertexOwnerItr);
+}
+
+/*!
+	Clear the owners of all the ghost vertices.
+
+	\param updateExchangeInfo if set to true exchange info will be updated
+*/
+void PatchKernel::clearGhostVertexOwners()
+{
+	m_ghostVertexOwners.clear();
+}
+
 /*!
 	Sets the owner of the specified ghost.
 
@@ -3087,6 +3409,273 @@ void PatchKernel::clearGhostCellOwners()
 
 /*!
 	Update the information needed for ghost data exchange.
+*/
+void PatchKernel::updateGhostExchangeInfo()
+{
+	// Cell exchange data
+	updateGhostCellExchangeInfo();
+
+	// Vertex exchange data
+	updateGhostVertexExchangeInfo();
+}
+
+/*!
+	Update the information needed for ghost vertex data exchange.
+*/
+void PatchKernel::updateGhostVertexExchangeInfo()
+{
+	// Patch information
+	int patchRank = getRank();
+
+	// Idenfity owners of target and source vertices
+	std::unordered_map<long, int> exchangeVertexOwners = evaluateExchangeVertexOwners();
+
+	//
+	// Clear ghosts
+	//
+
+	// List of vertices that are no more ghosts.
+	//
+	// Previous ghost vertices will be converted to internal vertices.
+	std::vector<long> previousGhosts;
+	previousGhosts.reserve(getGhostVertexCount());
+	for (VertexConstIterator vertexItr = ghostVertexBegin(); vertexItr != ghostVertexEnd(); ++vertexItr) {
+		long vertexId = vertexItr.getId();
+		if (exchangeVertexOwners.count(vertexId) != 0) {
+			continue;
+		}
+
+		previousGhosts.push_back(vertexId);
+	}
+
+	// Convert previous ghosts to internal vertices
+	for (long vertexId : previousGhosts) {
+		ghostVertex2InternalVertex(vertexId);
+	}
+
+	//
+	// Initialize ghost
+	//
+
+	// List of new ghost vertices
+	//
+	// Vertices need to be sorted with their order in the storage.
+	std::map<std::size_t, long> newGhosts;
+	for (const auto &entry : exchangeVertexOwners) {
+		int vertexOwner = entry.second;
+		if (vertexOwner == patchRank) {
+			continue;
+		}
+
+		long vertexId = entry.first;
+		VertexIterator vertexItr = m_vertices.find(vertexId);
+		if (!vertexItr->isInterior()) {
+			continue;
+		}
+
+		newGhosts.insert({vertexItr.getRawIndex(), vertexId});
+	}
+
+	// Set the owner of the existing ghosts
+	for (VertexConstIterator vertexItr = ghostVertexBegin(); vertexItr != ghostVertexEnd(); ++vertexItr) {
+		long vertexId = vertexItr->getId();
+		int vertexOwner = exchangeVertexOwners.at(vertexId);
+		setGhostVertexOwner(vertexId, vertexOwner);
+	}
+
+	// Create new ghosts
+	//
+	// The list of ghosts is processed backwards to reduce the number of
+	// vertices that need to be swapped (there is a high probability that
+	// most of the ghost vertices are already at the end of the storage).
+	//
+	// If a vertex is already a ghost, we still need to update its owner.
+	for (auto iter = newGhosts.rbegin(); iter != newGhosts.rend(); ++iter) {
+		long vertexId = iter->second;
+		int vertexOwner = exchangeVertexOwners.at(vertexId);
+		internalVertex2GhostVertex(vertexId, vertexOwner);
+	}
+
+	//
+	// Identify exchange targets
+	//
+
+	// Clear targets
+	m_ghostVertexExchangeTargets.clear();
+
+	// Update targets
+	for (const auto &entry : m_ghostVertexOwners) {
+		int ghostVertexRank = entry.second;
+		long ghostVertexId = entry.first;
+		m_ghostVertexExchangeTargets[ghostVertexRank].push_back(ghostVertexId);
+	}
+
+	// Sort the targets
+	for (auto &entry : m_ghostVertexExchangeTargets) {
+		std::vector<long> &rankTargets = entry.second;
+		std::sort(rankTargets.begin(), rankTargets.end(), VertexPositionLess(*this));
+	}
+
+	//
+	// Identify exchange sources
+	//
+
+	// Clear the sources
+	m_ghostVertexExchangeSources.clear();
+
+	// Update sources
+	//
+	// Target vertices belong to the cell with the lowest rank.
+	for (auto &entry : m_ghostVertexExchangeSources) {
+		std::vector<long> &rankSources = entry.second;
+
+		// Identify sources
+		for (long cellId : entry.second) {
+			const Cell &cell = getCell(cellId);
+			ConstProxyVector<long> cellVertexIds = cell.getVertexIds();
+			for (long vertexId : cellVertexIds) {
+				// Ghost vertices are not sources.
+				if (m_ghostCellOwners.count(vertexId) > 0) {
+					continue;
+				}
+
+				// Add the source to the list
+				rankSources.push_back(vertexId);
+			}
+		}
+
+		// Sort sources
+		std::sort(rankSources.begin(), rankSources.end(), VertexPositionLess(*this));
+
+		// Remove duplicate vertices
+		rankSources.erase(std::unique(rankSources.begin(), rankSources.end()), rankSources.end());
+	}
+}
+
+/*!
+	Evaluate owners of exchange (target and source) vertices.
+
+	Vertices that are on a partition border, belong to the partition with the
+	lowest rank.
+
+	We don't have information on the neighbours of the last layer of ghost
+	cells. To identify the owner of the vertices on the border faces of the
+	last layer of ghosts cells we need to excahgne some information among
+	the partitions. Each partition will use the local information to define
+	the owner of the vertices of the source and target cells. This tentative
+	values is then communicated among the partitions (the communications is
+	done using the cell exchange information that have already been built).
+	At this point each partition knows which are all the tentative owners
+	of the vertices, the correct owner is the one with the lowest rank.
+*/
+std::unordered_map<long, int> PatchKernel::evaluateExchangeVertexOwners() const
+{
+	// Patch information
+	int patchRank = getRank();
+
+	// Initialize communicator
+	DataCommunicator vertexOwnerCommunicator(getCommunicator());
+
+	// Start receives
+	for (const auto &entry : m_ghostCellExchangeTargets) {
+		int rank = entry.first;
+		const std::vector<long> &cellIds = entry.second;
+
+		std::size_t bufferSize = 0;
+		for (long cellId : cellIds) {
+			const Cell &cell = getCell(cellId);
+			bufferSize += sizeof(int) * cell.getVertexCount();
+		}
+		vertexOwnerCommunicator.setRecv(rank, bufferSize);
+		vertexOwnerCommunicator.startRecv(rank);
+	}
+
+	// Initialize owners using local information
+	std::unordered_map<long, int> exchangeVertexOwners;
+
+	for (const auto &entry : m_ghostCellExchangeSources) {
+		for (long cellId : entry.second) {
+			const Cell &cell = getCell(cellId);
+			for (long vertexId : cell.getVertexIds()) {
+				auto exchangeVertexOwnerItr = exchangeVertexOwners.find(vertexId);
+				if (exchangeVertexOwnerItr == exchangeVertexOwners.end()) {
+					exchangeVertexOwners.insert({vertexId, patchRank});
+				}
+			}
+		}
+	}
+
+	for (const auto &entry : m_ghostCellExchangeTargets) {
+		int targetCellOwner = entry.first;
+		for (long cellId : entry.second) {
+			const Cell &cell = getCell(cellId);
+			for (long vertexId : cell.getVertexIds()) {
+				auto exchangeVertexOwnerItr = exchangeVertexOwners.find(vertexId);
+				if (exchangeVertexOwnerItr == exchangeVertexOwners.end()) {
+					exchangeVertexOwners.insert({vertexId, targetCellOwner});
+				} else {
+					int &currentVertexOwner = exchangeVertexOwnerItr->second;
+					if (targetCellOwner < currentVertexOwner) {
+						currentVertexOwner = targetCellOwner;
+					}
+				}
+			}
+		}
+	}
+
+	// Send local vertex owners to the neighbouring partitions
+	for (const auto &entry : m_ghostCellExchangeSources) {
+		int rank = entry.first;
+		const std::vector<long> &cellIds = entry.second;
+
+		std::size_t bufferSize = 0;
+		for (long cellId : cellIds) {
+			const Cell &cell = getCell(cellId);
+			bufferSize += sizeof(int) * cell.getVertexCount();
+		}
+		vertexOwnerCommunicator.setSend(rank, bufferSize);
+
+		SendBuffer &buffer = vertexOwnerCommunicator.getSendBuffer(rank);
+		for (long cellId : cellIds) {
+			const Cell &cell = getCell(cellId);
+			for (long vertexId : cell.getVertexIds()) {
+				buffer << exchangeVertexOwners.at(vertexId);
+			}
+		}
+		vertexOwnerCommunicator.startSend(rank);
+	}
+
+	// Receive vertex owners from the neighbouring partitions
+	int nCompletedRecvs = 0;
+	while (nCompletedRecvs < vertexOwnerCommunicator.getRecvCount()) {
+		int rank = vertexOwnerCommunicator.waitAnyRecv();
+		const std::vector<long> &cellIds = m_ghostCellExchangeTargets.at(rank);
+		RecvBuffer &buffer = vertexOwnerCommunicator.getRecvBuffer(rank);
+
+		for (long cellId : cellIds) {
+			const Cell &cell = getCell(cellId);
+			for (long vertexId : cell.getVertexIds()) {
+				int remoteVertexOwner;
+				buffer >> remoteVertexOwner;
+
+				int &currentVertexOwner = exchangeVertexOwners.at(vertexId);
+				if (remoteVertexOwner < currentVertexOwner) {
+					currentVertexOwner = remoteVertexOwner;
+				}
+			}
+		}
+
+		++nCompletedRecvs;
+	}
+
+	// Wait until all sends are complete
+	vertexOwnerCommunicator.waitAllSends();
+
+	return exchangeVertexOwners;
+}
+
+/*!
+	Update the information needed for ghost cell data exchange.
 */
 void PatchKernel::updateGhostCellExchangeInfo()
 {
