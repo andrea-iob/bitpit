@@ -2323,6 +2323,30 @@ long PatchKernel::countOrphanCells() const
 }
 
 /*!
+	Updates the id of the last internal cell.
+*/
+void PatchKernel::updateLastInternalId()
+{
+	if (m_nInternals == 0) {
+		m_lastInternalId = Cell::NULL_ID;
+		return;
+	}
+
+	CellIterator lastInternalItr;
+#if BITPIT_ENABLE_MPI==1
+	if (m_nGhosts == 0) {
+		lastInternalItr = --m_cells.end();
+		m_lastInternalId = lastInternalItr->getId();
+	} else {
+		m_lastInternalId = m_cells.getSizeMarker(m_nInternals - 1, Cell::NULL_ID);
+	}
+#else
+	lastInternalItr = --m_cells.end();
+	m_lastInternalId = lastInternalItr->getId();
+#endif
+}
+
+/*!
 	Get the native index of a cell.
 
 	\param id is the id of the cell
@@ -3862,30 +3886,6 @@ void PatchKernel::restoreInterfaces(std::istream &stream)
 
 	// Set original advanced editing status
 	setExpert(originalExpertStatus);
-}
-
-/*!
-	Updates the id of the last internal cell.
-*/
-void PatchKernel::updateLastInternalId()
-{
-	if (m_nInternals == 0) {
-		m_lastInternalId = Cell::NULL_ID;
-		return;
-	}
-
-	CellIterator lastInternalItr;
-#if BITPIT_ENABLE_MPI==1
-	if (m_nGhosts == 0) {
-		lastInternalItr = --m_cells.end();
-		m_lastInternalId = lastInternalItr->getId();
-	} else {
-		m_lastInternalId = m_cells.getSizeMarker(m_nInternals - 1, Cell::NULL_ID);
-	}
-#else
-	lastInternalItr = --m_cells.end();
-	m_lastInternalId = lastInternalItr->getId();
-#endif
 }
 
 /*!
