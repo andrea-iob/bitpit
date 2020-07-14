@@ -57,7 +57,7 @@ SkdPatchInfo::SkdPatchInfo(const PatchKernel *patch, const std::vector<std::size
 */
 void SkdPatchInfo::buildCache()
 {
-    PatchKernel::CellConstRange cellRange(m_patch->internalConstBegin(), m_patch->internalConstEnd());
+    PatchKernel::CellConstRange cellRange(m_patch->internalCellConstBegin(), m_patch->internalCellConstEnd());
 
     buildCache(cellRange);
 }
@@ -746,13 +746,14 @@ bool SkdNode::boxIntersectsSphere(const std::array<double, 3> &center, double ra
 * Constructor.
 *
 * \param patch is the patch that will be use to build the tree
-* \param includeGhosts if set to true the ghost cells are included in the tree
+* \param includeGhostCells if set to true the ghost cells are included in the
+* tree
 */
-PatchSkdTree::PatchSkdTree(const PatchKernel *patch, bool includeGhosts)
+PatchSkdTree::PatchSkdTree(const PatchKernel *patch, bool includeGhostCells)
     : m_patchInfo(patch, &m_cellRawIds),
-      m_cellRawIds(includeGhosts ? patch->getCellCount() : patch->getInternalCount()),
+      m_cellRawIds(includeGhostCells ? patch->getCellCount() : patch->getInternalCellCount()),
       m_nLeafs(0), m_nMinLeafCells(0), m_nMaxLeafCells(0),
-      m_includeGhosts(includeGhosts)
+      m_includeGhostCells(includeGhostCells)
 {
 
 }
@@ -810,12 +811,12 @@ void PatchSkdTree::build(std::size_t leafThreshold, bool squeezeStorage)
     // Initialize list of cell raw ids
     std::size_t nCells;
     PatchKernel::CellConstRange cellRange;
-    if (m_includeGhosts) {
+    if (m_includeGhostCells) {
         nCells = patch.getCellCount();
         cellRange.initialize(patch.cellConstBegin(), patch.cellConstEnd());
     } else {
-        nCells = patch.getInternalCount();
-        cellRange.initialize(patch.internalConstBegin(), patch.internalConstEnd());
+        nCells = patch.getInternalCellCount();
+        cellRange.initialize(patch.internalCellConstBegin(), patch.internalCellConstEnd());
     }
 
     if (m_cellRawIds.size() != nCells) {

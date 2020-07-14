@@ -535,10 +535,10 @@ int SurfUnstructured::exportSTLSingle(const std::string &filename, bool isBinary
     }
 
     // Write header
-    std::size_t nFacets = getInternalCount();
+    std::size_t nFacets = getInternalCellCount();
 #if BITPIT_ENABLE_MPI==1
     if (!exportInternalsOnly) {
-        nFacets += getGhostCount();
+        nFacets += getGhostCellCount();
     }
 #endif
 
@@ -553,8 +553,8 @@ int SurfUnstructured::exportSTLSingle(const std::string &filename, bool isBinary
     CellConstIterator cellBegin;
     CellConstIterator cellEnd;
     if (exportInternalsOnly) {
-        cellBegin = internalConstBegin();
-        cellEnd   = internalConstEnd();
+        cellBegin = internalCellConstBegin();
+        cellEnd   = internalCellConstEnd();
     } else {
         cellBegin = cellConstBegin();
         cellEnd   = cellConstEnd();
@@ -632,9 +632,9 @@ int SurfUnstructured::exportSTLMulti(const std::string &filename, bool exportInt
     }
 
     // Export the internal cells
-    for (int pid : getInternalPIDs()) {
+    for (int pid : getInternalCellPIDs()) {
         // Cells associated to the PID
-        std::vector<long> cells = getInternalsByPID(pid);
+        std::vector<long> cells = getInternalCellsByPID(pid);
 
         // Write header
         std::string name;
@@ -689,7 +689,7 @@ int SurfUnstructured::exportSTLMulti(const std::string &filename, bool exportInt
 
 #if BITPIT_ENABLE_MPI==1
     // Export ghost cells
-    long nGhosts = getGhostCount();
+    long nGhosts = getGhostCellCount();
     if (!exportInternalsOnly && nGhosts > 0) {
         // Write header
         std::string name = "ghosts";
@@ -704,8 +704,8 @@ int SurfUnstructured::exportSTLMulti(const std::string &filename, bool exportInt
         }
 
         // Write facet data
-        CellConstIterator cellBegin = internalConstBegin();
-        CellConstIterator cellEnd   = internalConstEnd();
+        CellConstIterator cellBegin = internalCellConstBegin();
+        CellConstIterator cellEnd   = internalCellConstEnd();
         for (CellConstIterator cellItr = cellBegin; cellItr != cellEnd; ++cellItr) {
             // Get cell
             const Cell &cell = *cellItr;

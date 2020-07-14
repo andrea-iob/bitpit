@@ -168,9 +168,9 @@ protected:
 
     std::vector<SkdNode, SkdNode::Allocator> m_nodes;
 
-    bool m_includeGhosts;
+    bool m_includeGhostCells;
 
-    PatchSkdTree(const PatchKernel *patch, bool includeGhosts = true);
+    PatchSkdTree(const PatchKernel *patch, bool includeGhostCells = true);
 
     SkdNode & _getNode(std::size_t nodeId);
 
