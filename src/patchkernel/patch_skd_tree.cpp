@@ -1044,9 +1044,7 @@ void PatchSkdTree::build(std::size_t leafThreshold, bool squeezeStorage)
     }
 
     // Build partition info with partition boxes if the patch is partitioned
-    if (patch.isPartitioned()) {
-        buildPartitionBoxes();
-    }
+    buildPartitionBoxes();
 #endif
 }
 
@@ -1362,6 +1360,12 @@ void PatchSkdTree::buildPartitionBoxes()
 {
     // Recover local bounding box of the root node
     const SkdBox &box = getNode(0).getBoundingBox();
+
+    // Early return if the patch is not partitioned
+    if (m_patchInfo.getPatch().isPartitioned()) {
+        m_partitionBoxes.emplace_back(box);
+        return;
+    }
 
     // Collect minimum and maximum coordinates of bounding boxes
     std::vector<int> count(m_nProcessors, 3);
