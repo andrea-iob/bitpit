@@ -199,6 +199,9 @@ public:
     std::size_t evalMaxDepth(std::size_t rootId = 0) const;
 
 #if BITPIT_ENABLE_MPI
+    bool isCommunicatorSet() const;
+    const MPI_Comm & getCommunicator() const;
+
     const SkdBox & getPartitionBox(int rank) const;
 #endif
 
@@ -228,8 +231,6 @@ protected:
 #if BITPIT_ENABLE_MPI
     void setCommunicator(MPI_Comm communicator);
     void freeCommunicator();
-    bool isCommunicatorSet() const;
-    const MPI_Comm & getCommunicator() const;
 #endif
 
 private:
