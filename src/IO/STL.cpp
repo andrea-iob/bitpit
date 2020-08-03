@@ -1395,11 +1395,16 @@ int STLWriter::writeBegin(WriteMode writeMode)
 
     std::ios_base::openmode openMode;
     if (format == FormatBinary) {
-        if (writeMode != WriteOverwrite) {
+//         if (writeMode != WriteOverwrite) {
+//             throw std::runtime_error("Specified write mode is not supported for binary files.");
+//         }
+        if (writeMode == WriteOverwrite) {
+            openMode = std::ofstream::out | std::ofstream::binary;
+        } else if (writeMode == WriteAppend) {
+            openMode = std::ofstream::app | std::ofstream::binary;
+        } else {
             throw std::runtime_error("Specified write mode is not supported for binary files.");
         }
-
-        openMode = std::ofstream::out | std::ofstream::binary;
     } else {
         if (writeMode == WriteOverwrite) {
             openMode = std::ofstream::out;
