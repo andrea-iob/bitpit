@@ -523,76 +523,143 @@ int SurfUnstructured::exportSTLSingle(const std::string &filename, bool isBinary
     // An ampty solid name will be used.
     const std::string name = "";
 
-    // Begin writing
-    writerError = writer.writeBegin(STLWriter::WriteOverwrite);
-    if (writerError != 0) {
-        writer.writeEnd();
-
-        return writerError;
+    // Detect if this is the master writer
+    bool isMasterWriter;
+#if BITPIT_ENABLE_MPI==1
+    if (isPartitioned()) {
+        isMasterWriter = (getRank() == 0);
+    } else {
+        isMasterWriter = true;
     }
+#else
+    isMasterWriter = true;
+#endif
 
-    // Write header
-    std::size_t nFacets = getInternalCount();
+    // Count the number of facets
+    long nFacets = getInternalCount();
 #if BITPIT_ENABLE_MPI==1
     if (!exportInternalsOnly) {
         nFacets += getGhostCount();
     }
+
+    MPI_Allreduce(MPI_IN_PLACE, &nFacets, 1, MPI_LONG, MPI_MIN, getCommunicator());
 #endif
 
-    writerError = writer.writeHeader(name, nFacets);
-    if (writerError != 0) {
-        writer.writeEnd();
-
-        return writerError;
-    }
-
-    // Write facet data
-    CellConstIterator cellBegin;
-    CellConstIterator cellEnd;
-    if (exportInternalsOnly) {
-        cellBegin = internalConstBegin();
-        cellEnd   = internalConstEnd();
-    } else {
-        cellBegin = cellConstBegin();
-        cellEnd   = cellConstEnd();
-    }
-
-    for (CellConstIterator cellItr = cellBegin; cellItr != cellEnd; ++cellItr) {
-        // Get cell
-        const Cell &cell = *cellItr;
-
-        // Get vertex coordinates
-        ConstProxyVector<long> cellVertexIds = cell.getVertexIds();
-        assert(cellVertexIds.size() == 3);
-
-        const std::array<double, 3> &coords_0 = getVertex(cellVertexIds[0]).getCoords();
-        const std::array<double, 3> &coords_1 = getVertex(cellVertexIds[1]).getCoords();
-        const std::array<double, 3> &coords_2 = getVertex(cellVertexIds[2]).getCoords();
-
-        // Evaluate normal
-        const std::array<double, 3> normal = evalFacetNormal(cell.getId());
-
-        // Write data
-        writerError = writer.writeFacet(coords_0, coords_1, coords_2, normal);
+    // Write header
+    if (isMasterWriter) {
+        // Begin writing
+        writerError = writer.writeBegin(STLWriter::WriteOverwrite);
         if (writerError != 0) {
             writer.writeEnd();
 
             return writerError;
         }
+
+        // Write header section
+        writerError = writer.writeHeader(name, nFacets);
+        if (writerError != 0) {
+            writer.writeEnd();
+
+            return writerError;
+        }
+
+#if BITPIT_ENABLE_MPI==1
+        // Close the file to let other process write into it
+        writerError = writer.writeEnd();
+        if (writerError != 0) {
+            return writerError;
+        }
+#endif
+    }
+
+    // Write facet data
+#if BITPIT_ENABLE_MPI==1
+    int nFacetChunks = getProcessorCount();
+    for (int i = 0; i < nFacetChunks; ++i) {
+        if (i == getRank()) {
+            // Begin writing
+            writerError = writer.writeBegin(STLWriter::WriteAppend);
+            if (writerError != 0) {
+                writer.writeEnd();
+
+                return writerError;
+            }
+
+#else
+    {
+#endif
+            // Write facet section
+            CellConstIterator cellBegin;
+            CellConstIterator cellEnd;
+            if (exportInternalsOnly) {
+                cellBegin = internalConstBegin();
+                cellEnd   = internalConstEnd();
+            } else {
+                cellBegin = cellConstBegin();
+                cellEnd   = cellConstEnd();
+            }
+
+            for (CellConstIterator cellItr = cellBegin; cellItr != cellEnd; ++cellItr) {
+                // Get cell
+                const Cell &cell = *cellItr;
+
+                // Get vertex coordinates
+                ConstProxyVector<long> cellVertexIds = cell.getVertexIds();
+                assert(cellVertexIds.size() == 3);
+
+                const std::array<double, 3> &coords_0 = getVertex(cellVertexIds[0]).getCoords();
+                const std::array<double, 3> &coords_1 = getVertex(cellVertexIds[1]).getCoords();
+                const std::array<double, 3> &coords_2 = getVertex(cellVertexIds[2]).getCoords();
+
+                // Evaluate normal
+                const std::array<double, 3> normal = evalFacetNormal(cell.getId());
+
+                // Write data
+                writerError = writer.writeFacet(coords_0, coords_1, coords_2, normal);
+                if (writerError != 0) {
+                    writer.writeEnd();
+
+                    return writerError;
+                }
+            }
+
+#if BITPIT_ENABLE_MPI==1
+            // Close the file to let other process write into it
+            writerError = writer.writeEnd();
+            if (writerError != 0) {
+                return writerError;
+            }
+#endif
+        }
+
+        MPI_Barrier(getCommunicator());
     }
 
     // Write footer
-    writerError = writer.writeFooter(name);
-    if (writerError != 0) {
-        writer.writeEnd();
+    if (isMasterWriter) {
+#if BITPIT_ENABLE_MPI==1
+        // The file was closed to let other process write into it
+        writerError = writer.writeBegin(STLWriter::WriteAppend);
+        if (writerError != 0) {
+            writer.writeEnd();
 
-        return writerError;
-    }
+            return writerError;
+        }
+#endif
 
-    // End writing
-    writerError = writer.writeEnd();
-    if (writerError != 0) {
-        return writerError;
+        // Write footer section
+        writerError = writer.writeFooter(name);
+        if (writerError != 0) {
+            writer.writeEnd();
+
+            return writerError;
+        }
+
+        // End writing
+        writerError = writer.writeEnd();
+        if (writerError != 0) {
+            return writerError;
+        }
     }
 
     return 0;
