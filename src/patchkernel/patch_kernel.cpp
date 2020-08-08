@@ -163,6 +163,7 @@ PatchKernel::PatchKernel(const PatchKernel &other)
       m_partitioningSerialization(other.m_partitioningSerialization),
       m_partitioningOutgoings(other.m_partitioningOutgoings),
       m_partitioningGlobalExchanges(other.m_partitioningGlobalExchanges),
+      m_partitioningInfoDirty(other.m_partitioningInfoDirty),
       m_ghostVertexOwners(other.m_ghostVertexOwners),
       m_ghostVertexExchangeTargets(other.m_ghostVertexExchangeTargets),
       m_ghostVertexExchangeSources(other.m_ghostVertexExchangeSources),
@@ -293,6 +294,9 @@ void PatchKernel::initialize()
 	// initialization.
 	setPartitioningStatus(PARTITIONING_UNSUPPORTED);
 
+	// Mark ghost exchange information as up-to-date
+	setPartitioningInfoDirty(false);
+
 	// Initialize partitioning tags
 	m_partitioningCellsTag    = -1;
 	m_partitioningVerticesTag = -1;
@@ -369,8 +373,15 @@ std::vector<adaption::Info> PatchKernel::update(bool trackAdaption, bool squeeze
 	bool spawnNeeed       = (getSpawnStatus() == SPAWN_NEEDED);
 	bool adaptionDirty    = (getAdaptionStatus(true) == ADAPTION_DIRTY);
 	bool boundingBoxDirty = isBoundingBoxDirty();
+#if BITPIT_ENABLE_MPI==1
+	bool partitioningInfoDirty = arePartitioningInfoDirty();
+#endif
 
 	bool pendingChanges = (spawnNeeed || adaptionDirty || boundingBoxDirty);
+#if BITPIT_ENABLE_MPI==1
+	pendingChanges = (pendingChanges || partitioningInfoDirty);
+#endif
+
 	if (!pendingChanges) {
 		return updateInfo;
 	}
@@ -379,6 +390,13 @@ std::vector<adaption::Info> PatchKernel::update(bool trackAdaption, bool squeeze
 	if (spawnNeeed) {
 		mergeAdaptionInfo(spawn(trackAdaption), updateInfo);
 	}
+
+#if BITPIT_ENABLE_MPI==1
+	// Update partitionig info
+	if (partitioningInfoDirty) {
+		updateGhostExchangeInfo();
+	}
+#endif
 
 	// Adaption
 	if (adaptionDirty) {
@@ -623,12 +641,17 @@ void PatchKernel::endAlteration(bool squeezeStorage)
 	// Update information for ghost data exchange
 	//
 	// If we are partitioning the patch, the partition flag is not set yet (it
-	// will be set after the call to this function). We call the update of
-	// information for ghost data exchange unconditionally, if there are no
-	// ghosts the function will exit without doing anything.
-	if (getProcessorCount() > 1 && getAdjacenciesBuildStrategy() != ADJACENCIES_NONE) {
-		updateGhostExchangeInfo();
+	// will be set after the call to this function). In this case, we call the
+	// update of information for ghost data exchange unconditionally, if there
+	// are no ghosts the function will exit without doing anything.
+	bool forceGhostExchangeInfoUpdate;
+	if (isPartitioned()) {
+		forceGhostExchangeInfoUpdate = false;
+	} else {
+		forceGhostExchangeInfoUpdate = (getProcessorCount() > 1 && getAdjacenciesBuildStrategy() != ADJACENCIES_NONE);
 	}
+
+	updateGhostExchangeInfo(forceGhostExchangeInfoUpdate);
 #endif
 
 	// Synchronize storage
@@ -1377,6 +1400,11 @@ PatchKernel::VertexIterator PatchKernel::_addInternalVertex(const std::array<dou
 
 	// Update the bounding box
 	addPointToBoundingBox(iterator->getCoords());
+
+#if BITPIT_ENABLE_MPI==1
+	// Set ghost exchange information as dirty
+	setPartitioningInfoDirty(true);
+#endif
 
 	return iterator;
 }
@@ -2234,6 +2262,11 @@ PatchKernel::CellIterator PatchKernel::_addInternalCell(ElementType type, std::u
 	} else if (m_cells.rawIndex(m_lastInternalCellId) < m_cells.rawIndex(id)) {
 		m_lastInternalCellId = id;
 	}
+
+#if BITPIT_ENABLE_MPI==1
+	// Set ghost exchange information as dirty
+	setPartitioningInfoDirty(true);
+#endif
 
 	return iterator;
 }
@@ -5992,7 +6025,7 @@ void PatchKernel::consecutiveRenumberCells(long offset)
 #if BITPIT_ENABLE_MPI==1
 	// Update information for ghost data exchange
 	if (isPartitioned()) {
-		updateGhostExchangeInfo();
+		updateGhostExchangeInfo(true);
 	}
 #endif
 }	
@@ -6185,7 +6218,7 @@ void PatchKernel::restore(std::istream &stream, bool reregister)
 #if BITPIT_ENABLE_MPI==1
 	// Update information for ghost data exchange
 	if (isPartitioned()) {
-		updateGhostExchangeInfo();
+		updateGhostExchangeInfo(true);
 	}
 #endif
 

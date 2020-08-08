@@ -871,6 +871,8 @@ private:
 	std::unordered_map<long, int> m_partitioningOutgoings;
 	std::vector<std::pair<int, int>> m_partitioningGlobalExchanges;
 
+	bool m_partitioningInfoDirty;
+
 	std::unordered_map<long, int> m_ghostVertexOwners;
 	std::unordered_map<int, std::vector<long>> m_ghostVertexExchangeTargets;
 	std::unordered_map<int, std::vector<long>> m_ghostVertexExchangeSources;
@@ -895,7 +897,10 @@ private:
 	std::vector<adaption::Info> _partitioningAlter_sendCells(const std::unordered_set<int> &recvRanks, bool trackPartitioning, std::unordered_map<long, int> *ghostCellOwnershipChanges);
 	std::vector<adaption::Info> _partitioningAlter_receiveCells(const std::unordered_set<int> &sendRanks, bool trackPartitioning, std::unordered_map<long, int> *ghostCellOwnershipChanges);
 
-	void updateGhostExchangeInfo();
+	bool arePartitioningInfoDirty() const;
+	void setPartitioningInfoDirty(bool dirty);
+
+	void updateGhostExchangeInfo(bool forcedUpdated = false);
 
 	void updateGhostCellExchangeInfo();
 
