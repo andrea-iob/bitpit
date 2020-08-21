@@ -6087,10 +6087,15 @@ int PatchKernel::getDumpVersion() const
 /*!
  *  Write the patch to the specified stream.
  *
+ *  Patch will be updated before dumping it.
+ *
  *  \param stream is the stream to write to
  */
-void PatchKernel::dump(std::ostream &stream) const
+void PatchKernel::dump(std::ostream &stream)
 {
+	// Update the patch
+	update();
+
 	// Version
 	utils::binary::write(stream, getDumpVersion());
 
