@@ -636,6 +636,9 @@ public:
 	int getRank() const;
 	int getProcessorCount() const;
 
+	bool isDistributed() const;
+	int getOwner() const;
+
 	void setHaloSize(std::size_t haloSize);
 	std::size_t getHaloSize() const;
 
@@ -863,6 +866,8 @@ private:
 	bool m_partitioned;
 	PartitioningStatus m_partitioningStatus;
 
+	int m_owner;
+
 	std::size_t m_haloSize;
 
 	int m_partitioningCellsTag;
@@ -906,6 +911,8 @@ private:
 
 	void updateGhostVertexOwners();
 	void updateGhostVertexExchangeInfo();
+
+	void updateOwner();
 
 	std::unordered_map<long, int> evaluateExchangeVertexOwners() const;
 #endif

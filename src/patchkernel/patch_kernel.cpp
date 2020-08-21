@@ -157,6 +157,7 @@ PatchKernel::PatchKernel(const PatchKernel &other)
       , m_communicator(MPI_COMM_NULL),
       m_partitioned(other.m_partitioned),
       m_partitioningStatus(other.m_partitioningStatus),
+      m_owner(other.m_owner),
       m_haloSize(other.m_haloSize),
       m_partitioningCellsTag(other.m_partitioningCellsTag),
       m_partitioningVerticesTag(other.m_partitioningVerticesTag),
@@ -294,6 +295,9 @@ void PatchKernel::initialize()
 	// initialization.
 	setPartitioningStatus(PARTITIONING_UNSUPPORTED);
 
+	// Set patch owner
+	m_owner = m_rank;
+
 	// Mark ghost exchange information as up-to-date
 	setPartitioningInfoDirty(false);
 
@@ -395,6 +399,8 @@ std::vector<adaption::Info> PatchKernel::update(bool trackAdaption, bool squeeze
 	// Update partitionig info
 	if (partitioningInfoDirty) {
 		updateGhostExchangeInfo();
+
+		updateOwner();
 	}
 #endif
 
