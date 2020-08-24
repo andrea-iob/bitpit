@@ -1692,6 +1692,9 @@ std::vector<adaption::Info> PatchKernel::_partitioningPrepare(const std::unorder
 */
 std::vector<adaption::Info> PatchKernel::_partitioningAlter(bool trackPartitioning)
 {
+    // Adjacencies need to be up-to-date
+    updateAdjacencies();
+
     // Ghost final ghost owners
     //
     // If we are serializing the patch, we need to delete all the ghosts cells.
@@ -2524,6 +2527,9 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_sendCells(const std:
 
         deleteCells(deleteList, true, true);
 
+        // Update cell adjacencies
+        updateAdjacencies();
+
         // Delete stale ghosts
         //
         // Loop over all the ghosts and keep only the cells that have at least
@@ -2698,9 +2704,6 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_receiveCells(const s
     std::unordered_map<long, FlatVector2D<long>> duplicateCellsReceivedAdjacencies;
     std::unordered_map<long, long> cellsMap;
 
-    std::unordered_set<long> borderCellsSet;
-
-    std::unordered_set<long> cellsUpdateAdjacenciesOverall;
     std::vector<long> cellsUpdateInterfacesOverall;
     std::unordered_set<long> interfacesDeleteOverall;
 
@@ -3065,7 +3068,7 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_receiveCells(const s
             }
 
             // The interfaces of the cell need to be updated
-            setCellAlterationFlags(cellId, getCellAlterationFlags(cellId) | FLAG_INTERFACES_DIRTY);
+            setCellAlterationFlags(cellId, FLAG_INTERFACES_DIRTY);
 
             // Add the cell to the cell map
             if (cellOriginalId != cellId) {
@@ -3095,10 +3098,11 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_receiveCells(const s
         // Cleanup
         cellsBuffers[sendRankIndex].reset();
 
-        // Remove stale adjacencies
+        // Update adjacencies amonge added cells
         for (long cellId : addedCells) {
             Cell &cell = m_cells.at(cellId);
 
+            // Remove stale adjacencies
             int nCellFaces = cell.getFaceCount();
             for (int face = 0; face < nCellFaces; ++face) {
                 int nFaceAdjacencies = cell.getAdjacencyCount(face);
@@ -3115,13 +3119,9 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_receiveCells(const s
                     }
                 }
             }
-        }
 
-        // Remap adjacencies
-        if (!cellsMap.empty()) {
-            for (long cellId : addedCells) {
-                Cell &cell = m_cells.at(cellId);
-
+            // Remap adjacencies
+            if (!cellsMap.empty()) {
                 int nCellAdjacencies = cell.getAdjacencyCount();
                 long *cellAdjacencies = cell.getAdjacencies();
                 for (int k = 0; k < nCellAdjacencies; ++k) {
@@ -3131,6 +3131,11 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_receiveCells(const s
                         cellAdjacencyId = cellsMapItr->second;
                     }
                 }
+            }
+
+            // Cell adjacencies are up-to-date
+            if (duplicateCellsReceivedAdjacencies.count(cellId)) {
+                unsetCellAlterationFlags(cellId, FLAG_ADJACENCIES_DIRTY);
             }
         }
 
@@ -3178,21 +3183,19 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_receiveCells(const s
                         cell.pushAdjacency(face, localAdjacencyId);
                     }
                 }
+
+                unsetCellAlterationFlags(cellId, FLAG_ADJACENCIES_DIRTY);
             }
         } else {
-            borderCellsSet.clear();
             for (const Cell &cell : m_cells) {
                 int nCellFaces = cell.getFaceCount();
                 for (int face = 0; face < nCellFaces; ++face) {
                     if (cell.isFaceBorder(face)) {
-                        borderCellsSet.insert(cell.getId());
+                        long cellId = cell.getId();
+                        setCellAlterationFlags(cellId, FLAG_ADJACENCIES_DIRTY);
                         break;
                     }
                 }
-            }
-
-            for (long cellId : borderCellsSet) {
-                cellsUpdateAdjacenciesOverall.insert(cellId);
             }
         }
 
@@ -3202,8 +3205,7 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_receiveCells(const s
 
     // Update adjacencies
     if (getAdjacenciesBuildStrategy() == ADJACENCIES_AUTOMATIC) {
-        std::vector<long> updateList(cellsUpdateAdjacenciesOverall.begin(), cellsUpdateAdjacenciesOverall.end());
-        updateAdjacencies(updateList);
+        updateAdjacencies();
     }
 
     // Update interfaces
