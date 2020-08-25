@@ -1478,7 +1478,7 @@ VolOctree::StitchInfo VolOctree::deleteCells(const std::vector<DeleteInfo> &dele
 		deadCells.push_back(cellId);
 	}
 
-	PatchKernel::deleteCells(deadCells, false, true);
+	PatchKernel::deleteCells(deadCells, false);
 
 	// Prune cell adjacencies and interfaces
 	//
