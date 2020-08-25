@@ -3684,10 +3684,8 @@ void PatchKernel::setRestoredInterfaceAlterationFlags(long id)
 	Deletes an interface.
 
 	\param id is the id of the interface
-	\param updateNeighs if true the neighbour data will be updated after
-	removing the interface
 */
-bool PatchKernel::deleteInterface(long id, bool updateNeighs)
+bool PatchKernel::deleteInterface(long id)
 {
 	if (!isExpert()) {
 		return false;
@@ -3695,41 +3693,6 @@ bool PatchKernel::deleteInterface(long id, bool updateNeighs)
 
 	// Set the alteration flags
 	setDeletedInterfaceAlterationFlags(id);
-
-	// Update neighbours
-	if (updateNeighs) {
-		Interface &interface = m_interfaces[id];
-
-		// Update owner
-		//
-		// If the owner has been deleted before the interface, it may be null.
-		long ownerId = interface.getOwner();
-		if (ownerId >= 0) {
-			Cell &owner = m_cells[ownerId];
-			int ownerFace = interface.getOwnerFace();
-			const long *ownerFaceInterfaces = owner.getInterfaces(ownerFace);
-
-			int ownerInterfaceId = 0;
-			while (ownerFaceInterfaces[ownerInterfaceId] != id) {
-				++ownerInterfaceId;
-			}
-			owner.deleteInterface(ownerFace, ownerInterfaceId);
-		}
-
-		// Update neighbour
-		long neighId = interface.getNeigh();
-		if (neighId >= 0) {
-			Cell &neigh = m_cells[neighId];
-			int neighFace = interface.getNeighFace();
-			const long *neighFaceInterfaces = neigh.getInterfaces(neighFace);
-
-			int neighInterfaceId = 0;
-			while (neighFaceInterfaces[neighInterfaceId] != id) {
-				++neighInterfaceId;
-			}
-			neigh.deleteInterface(neighFace, neighInterfaceId);
-		}
-	}
 
 	// Delete interface
 	m_interfaces.erase(id, true);
@@ -3742,10 +3705,8 @@ bool PatchKernel::deleteInterface(long id, bool updateNeighs)
 	Deletes a list of interfaces.
 
 	\param ids are the ids of the interfaces to be deleted
-	\param updateNeighs if true the neighbour data will be updated after
-	removing the interface
 */
-bool PatchKernel::deleteInterfaces(const std::vector<long> &ids, bool updateNeighs)
+bool PatchKernel::deleteInterfaces(const std::vector<long> &ids)
 {
 	if (!isExpert()) {
 		return false;
@@ -3773,11 +3734,11 @@ bool PatchKernel::deleteInterfaces(const std::vector<long> &ids, bool updateNeig
 			continue;
 		}
 
-		deleteInterface(interfaceId, updateNeighs);
+		deleteInterface(interfaceId);
 	}
 
 	if (deleteLast) {
-		deleteInterface(lastId, updateNeighs);
+		deleteInterface(lastId);
 	}
 
 	return true;
@@ -5264,7 +5225,7 @@ void PatchKernel::pruneStaleInterfaces()
 		long interfaceId = entry.first;
 		danglingInterfaces.push_back(interfaceId);
 	}
-	deleteInterfaces(danglingInterfaces, false);
+	deleteInterfaces(danglingInterfaces);
 }
 
 /*!
