@@ -430,9 +430,8 @@ void PatchKernel::_restoreGhostVertex(const VertexIterator &iterator, const std:
 	Internal function to delete a ghost vertex.
 
 	\param id is the id of the vertex
-	\param delayed is true a delayed delete will be performed
 */
-void PatchKernel::_deleteGhostVertex(long id, bool delayed)
+void PatchKernel::_deleteGhostVertex(long id)
 {
 	// Unset ghost owner
 	unsetGhostVertexOwner(id);
@@ -442,7 +441,7 @@ void PatchKernel::_deleteGhostVertex(long id, bool delayed)
 	removePointFromBoundingBox(vertex.getCoords());
 
 	// Delete vertex
-	m_vertices.erase(id, delayed);
+	m_vertices.erase(id, true);
 	m_nGhostVertices--;
 	if (id == m_firstGhostVertexId) {
 		updateFirstGhostVertexId();
