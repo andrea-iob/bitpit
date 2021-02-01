@@ -49,8 +49,12 @@ int subtest_001(int rank, int nProcs)
     double length = 2*BITPIT_PI;
     double dh = length/100;
 
-    /**<Create the patch.*/ 
+    /**<Create the patch.*/
+#if BITPIT_ENABLE_MPI
+    VolumeKernel * mesh = new VolOctree(2, origin, length, dh, MPI_COMM_NULL);
+#else
     VolumeKernel * mesh = new VolOctree(2, origin, length, dh);
+#endif
     mesh->initializeAdjacencies();
     mesh->initializeInterfaces();
     mesh->update();

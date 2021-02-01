@@ -29,6 +29,9 @@
 #include <cstddef>
 #include <memory>
 #include <vector>
+#if BITPIT_ENABLE_MPI==1
+#	include <mpi.h>
+#endif
 
 #include "bitpit_patchkernel.hpp"
 
