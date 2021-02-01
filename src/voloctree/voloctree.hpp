@@ -66,13 +66,13 @@ public:
 	};
 
 	VolOctree();
-	VolOctree(int dimension, const std::array<double, 3> &origin, double length, double dh);
-	VolOctree(int id, int dimension, const std::array<double, 3> &origin, double length, double dh);
+	VolOctree(short dimension, const std::array<double, 3> &origin, double length, double dh);
+	VolOctree(int id, short dimension, const std::array<double, 3> &origin, double length, double dh);
 	VolOctree(std::istream &stream);
 #if BITPIT_ENABLE_MPI==1
 	VolOctree(MPI_Comm communicator, std::size_t haloSize = 1);
-	VolOctree(int dimension, const std::array<double, 3> &origin, double length, double dh, MPI_Comm communicator, std::size_t haloSize = 1);
-	VolOctree(int id, int dimension, const std::array<double, 3> &origin, double length, double dh, MPI_Comm communicator, std::size_t haloSize = 1);
+	VolOctree(short dimension, const std::array<double, 3> &origin, double length, double dh, MPI_Comm communicator, std::size_t haloSize = 1);
+	VolOctree(int id, short dimension, const std::array<double, 3> &origin, double length, double dh, MPI_Comm communicator, std::size_t haloSize = 1);
 	VolOctree(std::istream &stream, MPI_Comm communicator, std::size_t haloSize = 1);
 #endif
 	VolOctree(std::unique_ptr<PabloUniform> &&tree, std::unique_ptr<PabloUniform> *adopter = nullptr);
@@ -83,7 +83,7 @@ public:
 	std::unique_ptr<PatchKernel> clone() const override;
 
 	void reset() override;
-	void setDimension(int dimension) override;
+	void setDimension(short dimension) override;
 
 	void settleAdaptionMarkers() override;
 
@@ -254,7 +254,7 @@ private:
 	void setBoundingBox();
 
 	void __reset(bool resetTree);
-	void __setDimension(int dimension);
+	void __setDimension(short dimension);
 
 	bool setMarker(long id, int8_t value);
 

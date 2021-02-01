@@ -46,12 +46,12 @@ public:
 
 protected:
 	VolumeKernel(bool expert);
-	VolumeKernel(int dimension, bool expert);
-	VolumeKernel(int id, int dimension, bool expert);
+	VolumeKernel(short dimension, bool expert);
+	VolumeKernel(int id, short dimension, bool expert);
 #if BITPIT_ENABLE_MPI==1
 	VolumeKernel(MPI_Comm communicator, std::size_t haloSize, bool expert);
-	VolumeKernel(int dimension, MPI_Comm communicator, std::size_t haloSize, bool expert);
-	VolumeKernel(int id, int dimension, MPI_Comm communicator, std::size_t haloSize, bool expert);
+	VolumeKernel(short dimension, MPI_Comm communicator, std::size_t haloSize, bool expert);
+	VolumeKernel(int id, short dimension, MPI_Comm communicator, std::size_t haloSize, bool expert);
 #endif
 
 };

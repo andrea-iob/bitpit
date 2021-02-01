@@ -74,7 +74,7 @@ VolCartesian::VolCartesian()
 	\param lengths are the lengths of the domain
 	\param nCells are the numbers of cells of the patch
 */
-VolCartesian::VolCartesian(int dimension,
+VolCartesian::VolCartesian(short dimension,
                                const std::array<double, 3> &origin,
                                const std::array<double, 3> &lengths,
                                const std::array<int, 3> &nCells)
@@ -91,7 +91,7 @@ VolCartesian::VolCartesian(int dimension,
 	\param lengths are the lengths of the domain
 	\param nCells are the number of cells along each direction
 */
-VolCartesian::VolCartesian(int id, int dimension,
+VolCartesian::VolCartesian(int id, short dimension,
                                const std::array<double, 3> &origin,
                                const std::array<double, 3> &lengths,
                                const std::array<int, 3> &nCells)
@@ -113,7 +113,7 @@ VolCartesian::VolCartesian(int id, int dimension,
 	\param length is the length of the domain
 	\param nCells is the number of cells along each direction
 */
-VolCartesian::VolCartesian(int dimension,
+VolCartesian::VolCartesian(short dimension,
                                const std::array<double, 3> &origin,
                                double length, int nCells)
 	: VolCartesian(PatchManager::AUTOMATIC_ID, dimension, origin, length, nCells)
@@ -129,7 +129,7 @@ VolCartesian::VolCartesian(int dimension,
 	\param length is the length of the domain
 	\param nCells is the number of cells along each direction
 */
-VolCartesian::VolCartesian(int id, int dimension,
+VolCartesian::VolCartesian(int id, short dimension,
                                const std::array<double, 3> &origin,
                                double length, int nCells)
 	: VolumeKernel(id, dimension, false)
@@ -150,7 +150,7 @@ VolCartesian::VolCartesian(int id, int dimension,
 	\param length is the length of the domain
 	\param dh is the maximum allowed mesh spacing
 */
-VolCartesian::VolCartesian(int dimension,
+VolCartesian::VolCartesian(short dimension,
                                const std::array<double, 3> &origin,
                                double length, double dh)
 	: VolCartesian(PatchManager::AUTOMATIC_ID, dimension, origin, length, dh)
@@ -166,7 +166,7 @@ VolCartesian::VolCartesian(int dimension,
 	\param length is the length of the domain
 	\param dh is the maximum allowed mesh spacing
 */
-VolCartesian::VolCartesian(int id, int dimension,
+VolCartesian::VolCartesian(int id, short dimension,
                                const std::array<double, 3> &origin,
                                double length, double dh)
 	: VolumeKernel(id, dimension, false)
@@ -1761,7 +1761,7 @@ void VolCartesian::scale(const std::array<double, 3> &scaling, const std::array<
 */
 std::vector<double> VolCartesian::convertToVertexData(const std::vector<double> &cellData) const
 {
-	int dimension = getDimension();
+	short dimension = getDimension();
 
 	int nContribs_x = 2;
 	int nContribs_y = 2;
@@ -1816,7 +1816,7 @@ std::vector<double> VolCartesian::convertToVertexData(const std::vector<double> 
 */
 std::vector<double> VolCartesian::convertToCellData(const std::vector<double> &vertexData) const
 {
-	int dimension = getDimension();
+	short dimension = getDimension();
 
 	int nContribs_x = 2;
 	int nContribs_y = 2;
@@ -1883,7 +1883,7 @@ int VolCartesian::linearCellInterpolation(std::array<double,3> &point,
 		return 0;
 	}
 
-	int dimension = getDimension();
+	short dimension = getDimension();
 
 	int nContribs_x = 1;
 	int nContribs_y = 1;
@@ -1891,7 +1891,7 @@ int VolCartesian::linearCellInterpolation(std::array<double,3> &point,
 
 	std::array< std::array<int,2>, 3> cStencil;
 	std::array< std::array<double,2>, 3> cWeights;
-	for (int d = 0; d < dimension; ++d) {
+	for (short d = 0; d < dimension; ++d) {
 		// Find cell index
 		int index_point = ijk_point[d];
 		if (point[d] < m_cellCenters[d][index_point]) {
@@ -1981,7 +1981,7 @@ int VolCartesian::linearVertexInterpolation(std::array<double,3> &point,
 		return 0;
 	}
 
-	int dimension = getDimension();
+	short dimension = getDimension();
 
 	int nContribs_x = 2;
 	int nContribs_y = 2;
@@ -1989,7 +1989,7 @@ int VolCartesian::linearVertexInterpolation(std::array<double,3> &point,
 
 	std::array< std::array<int,2>, 3> cStencil;
 	std::array< std::array<double,2>, 3> cWeights;
-	for (int d = 0; d < dimension; ++d) {
+	for (short d = 0; d < dimension; ++d) {
 		int index_point = ijk_point[d];
 		int index_next  = index_point +1;
 

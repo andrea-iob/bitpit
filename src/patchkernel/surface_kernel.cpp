@@ -93,7 +93,7 @@ SurfaceKernel::SurfaceKernel(MPI_Comm communicator, std::size_t haloSize, bool e
 	\param space_dim is the dimension of the space
 	\param expert if true, the expert mode will be enabled
 */
-SurfaceKernel::SurfaceKernel(int patch_dim, int space_dim, bool expert)
+SurfaceKernel::SurfaceKernel(short patch_dim, short space_dim, bool expert)
 #if BITPIT_ENABLE_MPI==1
 	: SurfaceKernel(patch_dim, space_dim, MPI_COMM_NULL, 0, expert)
 {
@@ -110,7 +110,7 @@ SurfaceKernel::SurfaceKernel(int patch_dim, int space_dim, bool expert)
 	cells halo
 	\param expert if true, the expert mode will be enabled
 */
-SurfaceKernel::SurfaceKernel(int patch_dim, int space_dim, MPI_Comm communicator, std::size_t haloSize, bool expert)
+SurfaceKernel::SurfaceKernel(short patch_dim, short space_dim, MPI_Comm communicator, std::size_t haloSize, bool expert)
 	: PatchKernel(patch_dim, communicator, haloSize, expert)
 #else
 	: PatchKernel(patch_dim, expert)
@@ -130,7 +130,7 @@ SurfaceKernel::SurfaceKernel(int patch_dim, int space_dim, MPI_Comm communicator
 	\param space_dim is the dimension of the space
 	\param expert if true, the expert mode will be enabled
 */
-SurfaceKernel::SurfaceKernel(int id, int patch_dim, int space_dim, bool expert)
+SurfaceKernel::SurfaceKernel(int id, short patch_dim, short space_dim, bool expert)
 #if BITPIT_ENABLE_MPI==1
     : SurfaceKernel(id, patch_dim, space_dim, MPI_COMM_NULL, 0, expert)
 {
@@ -148,7 +148,7 @@ SurfaceKernel::SurfaceKernel(int id, int patch_dim, int space_dim, bool expert)
 	cells halo
 	\param expert if true, the expert mode will be enabled
 */
-SurfaceKernel::SurfaceKernel(int id, int patch_dim, int space_dim, MPI_Comm communicator, std::size_t haloSize, bool expert)
+SurfaceKernel::SurfaceKernel(int id, short patch_dim, short space_dim, MPI_Comm communicator, std::size_t haloSize, bool expert)
 	: PatchKernel(id, patch_dim, communicator, haloSize, expert)
 #else
 	: PatchKernel(id, patch_dim, expert)
@@ -179,7 +179,7 @@ void SurfaceKernel::initialize()
 
 	\param dimension the dimension of the working patch
 */
-void SurfaceKernel::setSpaceDimension(int dimension)
+void SurfaceKernel::setSpaceDimension(short dimension)
 {
     // If the dimension was already assigned, reset the patch
     if (m_spaceDim > 0 && m_spaceDim != dimension) {
@@ -195,7 +195,7 @@ void SurfaceKernel::setSpaceDimension(int dimension)
  *
  * \result The number of dimensions.
  */
-int SurfaceKernel::getSpaceDimension(void) const
+short SurfaceKernel::getSpaceDimension(void) const
 {
     return(m_spaceDim);
 }
@@ -1060,7 +1060,7 @@ bool SurfaceKernel::haveSameOrientation(long cellId_A, int cellFace_A, long cell
     std::size_t nCellVertices_B = cellVertexIds_B.size();
 
     assert(cell_A.getDimension() == cell_B.getDimension());
-    int cellDimension = cell_A.getDimension();
+    short cellDimension = cell_A.getDimension();
     assert(cellDimension < 3);
 
     //

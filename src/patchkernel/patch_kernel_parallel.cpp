@@ -2007,7 +2007,7 @@ std::vector<adaption::Info> PatchKernel::_partitioningAlter_sendCells(const std:
     //
     const double ACTIVATE_MEMORY_LIMIT_THRESHOLD = 0.15;
 
-    int patchDimension = getDimension();
+    short patchDimension = getDimension();
 
     MPI_Request verticesSizeRequest = MPI_REQUEST_NULL;
     MPI_Request cellsSizeRequest    = MPI_REQUEST_NULL;

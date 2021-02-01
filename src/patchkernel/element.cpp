@@ -932,7 +932,7 @@ ElementType Element::getEdgeType(int edge) const
 {
 	BITPIT_UNUSED(edge);
 
-	int dimension = getDimension();
+	short dimension = getDimension();
 	switch (dimension) {
 
 	case 0:
@@ -1065,7 +1065,7 @@ ConstProxyVector<long> Element::getEdgeConnect(int edge) const
 	\param type the type of the element
 	\return The dimension of the element
 */
-int Element::getDimension(ElementType type)
+short Element::getDimension(ElementType type)
 {
 	switch (type) {
 
@@ -1088,7 +1088,7 @@ int Element::getDimension(ElementType type)
 
 	\return The dimension of the element
 */
-int Element::getDimension() const
+short Element::getDimension() const
 {
 	return getDimension(m_type);
 }
@@ -1643,7 +1643,7 @@ std::array<double, 3> Element::evalNormal(const std::array<double, 3> *coordinat
 
 	case ElementType::POLYGON:
 	{
-		int dimension = getDimension();
+		short dimension = getDimension();
 
 		Tesselation tesselation = generateTesselation(coordinates);
 		int nTiles = tesselation.getTileCount();
@@ -1678,7 +1678,7 @@ std::array<double, 3> Element::evalNormal(const std::array<double, 3> *coordinat
 	{
 		assert(getDimension() != 3);
 
-		int dimension = getDimension();
+		short dimension = getDimension();
 		if (dimension == 2) {
 			const Reference2DElementInfo &referenceInfo = static_cast<const Reference2DElementInfo &>(getInfo());
 

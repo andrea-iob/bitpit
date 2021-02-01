@@ -41,7 +41,7 @@ using namespace bitpit;
 */
 int subtest_001()
 {
-    int dimensions = 2;
+    short dimensions = 2;
 
     // Generate patch
     std::array<double, 3> patchOrigin = {{-2.5, -2.5, 0.}};
@@ -219,7 +219,7 @@ int subtest_001()
 */
 int subtest_002()
 {
-    int dimensions = 2;
+    short dimensions = 2;
 
     // Generate patch
     std::array<double, 3> origin = {{-2.5, -2.5, 0.}};
@@ -282,7 +282,7 @@ int subtest_002()
 */
 int subtest_003()
 {
-    int dimensions = 1;
+    short dimensions = 1;
 
     double h = 1.;
 
@@ -362,7 +362,7 @@ int subtest_003()
 */
 int subtest_004()
 {
-    int dimensions = 1;
+    short dimensions = 1;
 
     // Generate reconstruction stencil
     {
@@ -423,7 +423,7 @@ int subtest_004()
 */
 int subtest_005()
 {
-    int dimensions = 2;
+    short dimensions = 2;
 
     // Generate reconstruction stencil
     {

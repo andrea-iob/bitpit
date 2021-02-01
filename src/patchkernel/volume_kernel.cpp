@@ -70,7 +70,7 @@ VolumeKernel::VolumeKernel(MPI_Comm communicator, std::size_t haloSize, bool exp
 	\param dimension is the dimension of the patch
 	\param expert if true, the expert mode will be enabled
 */
-VolumeKernel::VolumeKernel(int dimension, bool expert)
+VolumeKernel::VolumeKernel(short dimension, bool expert)
 #if BITPIT_ENABLE_MPI==1
 	: VolumeKernel(dimension, MPI_COMM_NULL, 0, expert)
 {
@@ -86,7 +86,7 @@ VolumeKernel::VolumeKernel(int dimension, bool expert)
 	cells halo
 	\param expert if true, the expert mode will be enabled
 */
-VolumeKernel::VolumeKernel(int dimension, MPI_Comm communicator, std::size_t haloSize, bool expert)
+VolumeKernel::VolumeKernel(short dimension, MPI_Comm communicator, std::size_t haloSize, bool expert)
 	: PatchKernel(dimension, communicator, haloSize, expert)
 #else
 	: PatchKernel(dimension, expert)
@@ -101,7 +101,7 @@ VolumeKernel::VolumeKernel(int dimension, MPI_Comm communicator, std::size_t hal
 	\param dimension is the dimension of the patch
 	\param expert if true, the expert mode will be enabled
 */
-VolumeKernel::VolumeKernel(int id, int dimension, bool expert)
+VolumeKernel::VolumeKernel(int id, short dimension, bool expert)
 #if BITPIT_ENABLE_MPI==1
 	: VolumeKernel(id, dimension, MPI_COMM_NULL, 0, expert)
 {
@@ -118,7 +118,7 @@ VolumeKernel::VolumeKernel(int id, int dimension, bool expert)
 	cells halo
 	\param expert if true, the expert mode will be enabled
 */
-VolumeKernel::VolumeKernel(int id, int dimension, MPI_Comm communicator, std::size_t haloSize, bool expert)
+VolumeKernel::VolumeKernel(int id, short dimension, MPI_Comm communicator, std::size_t haloSize, bool expert)
 	: PatchKernel(id, dimension, communicator, haloSize, expert)
 #else
 	: PatchKernel(id, dimension, expert)

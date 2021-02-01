@@ -39,12 +39,12 @@ public:
 	using PatchKernel::locatePoint;
 
 	VolUnstructured();
-	VolUnstructured(int dimension);
-	VolUnstructured(int id, int dimension);
+	VolUnstructured(short dimension);
+	VolUnstructured(int id, short dimension);
 #if BITPIT_ENABLE_MPI==1
 	VolUnstructured(MPI_Comm communicator);
-	VolUnstructured(int dimension, MPI_Comm communicator);
-	VolUnstructured(int id, int dimension, MPI_Comm communicator);
+	VolUnstructured(short dimension, MPI_Comm communicator);
+	VolUnstructured(int id, short dimension, MPI_Comm communicator);
 #endif
 
 	~VolUnstructured();

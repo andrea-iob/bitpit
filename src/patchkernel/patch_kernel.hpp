@@ -376,8 +376,8 @@ public:
 	bool isExpert() const;
 
 	int getId() const;
-	int getDimension() const;
-	virtual void setDimension(int dimension);
+	short getDimension() const;
+	virtual void setDimension(short dimension);
 	bool isThreeDimensional() const;
 
 	bool empty() const;
@@ -478,8 +478,8 @@ public:
 	void getCellVertexCoordinates(long id, std::array<double, 3> *coordinates) const;
 	std::vector<long> findCellNeighs(long id) const;
 	void findCellNeighs(long id, std::vector<long> *neighs) const;
-	std::vector<long> findCellNeighs(long id, int codimension, bool complete = true) const;
-	void findCellNeighs(long id, int codimension, bool complete, std::vector<long> *neighs) const;
+	std::vector<long> findCellNeighs(long id, short codimension, bool complete = true) const;
+	void findCellNeighs(long id, short codimension, bool complete, std::vector<long> *neighs) const;
 	std::vector<long> findCellFaceNeighs(long id) const;
 	void findCellFaceNeighs(long id, std::vector<long> *neighs) const;
 	std::vector<long> findCellFaceNeighs(long id, int face) const;
@@ -721,12 +721,12 @@ protected:
 	AlterationFlagsStorage m_alteredInterfaces;
 
 	PatchKernel(bool expert);
-	PatchKernel(int dimension, bool expert);
-	PatchKernel(int id, int dimension, bool expert);
+	PatchKernel(short dimension, bool expert);
+	PatchKernel(int id, short dimension, bool expert);
 #if BITPIT_ENABLE_MPI==1
 	PatchKernel(MPI_Comm communicator, std::size_t haloSize, bool expert);
-	PatchKernel(int dimension, MPI_Comm communicator, std::size_t haloSize, bool expert);
-	PatchKernel(int id, int dimension, MPI_Comm communicator, std::size_t haloSize, bool expert);
+	PatchKernel(short dimension, MPI_Comm communicator, std::size_t haloSize, bool expert);
+	PatchKernel(int id, short dimension, MPI_Comm communicator, std::size_t haloSize, bool expert);
 #endif
 	PatchKernel(const PatchKernel &other);
     PatchKernel & operator=(const PatchKernel &other) = delete;
@@ -913,7 +913,7 @@ private:
 	bool m_expert;
 
 	int m_id;
-	int m_dimension;
+	short m_dimension;
 
 	bool m_toleranceCustom;
 	double m_tolerance;

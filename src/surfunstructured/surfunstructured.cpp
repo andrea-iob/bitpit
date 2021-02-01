@@ -67,7 +67,7 @@ SurfUnstructured::SurfUnstructured(MPI_Comm communicator)
 	\param patch_dim is the dimension of the patch
 	\param space_dim is the dimension of the space
 */
-SurfUnstructured::SurfUnstructured(int patch_dim, int space_dim)
+SurfUnstructured::SurfUnstructured(short patch_dim, short space_dim)
 #if BITPIT_ENABLE_MPI==1
 	: SurfUnstructured(patch_dim, space_dim, MPI_COMM_NULL)
 {
@@ -81,7 +81,7 @@ SurfUnstructured::SurfUnstructured(int patch_dim, int space_dim)
 	\param communicator is the communicator to be used for exchanging data
 	among the processes
 */
-SurfUnstructured::SurfUnstructured(int patch_dim, int space_dim, MPI_Comm communicator)
+SurfUnstructured::SurfUnstructured(short patch_dim, short space_dim, MPI_Comm communicator)
 	: SurfaceKernel(PatchManager::AUTOMATIC_ID, patch_dim, space_dim, communicator, 1, true)
 #else
 	: SurfaceKernel(PatchManager::AUTOMATIC_ID, patch_dim, space_dim, true)
@@ -96,7 +96,7 @@ SurfUnstructured::SurfUnstructured(int patch_dim, int space_dim, MPI_Comm commun
 	\param patch_dim is the dimension of the patch
 	\param space_dim is the dimension of the space
 */
-SurfUnstructured::SurfUnstructured(int id, int patch_dim, int space_dim)
+SurfUnstructured::SurfUnstructured(int id, short patch_dim, short space_dim)
 #if BITPIT_ENABLE_MPI==1
 	: SurfUnstructured(id, patch_dim, space_dim, MPI_COMM_NULL)
 {
@@ -111,7 +111,7 @@ SurfUnstructured::SurfUnstructured(int id, int patch_dim, int space_dim)
 	\param communicator is the communicator to be used for exchanging data
 	among the processes
 */
-SurfUnstructured::SurfUnstructured(int id, int patch_dim, int space_dim, MPI_Comm communicator)
+SurfUnstructured::SurfUnstructured(int id, short patch_dim, short space_dim, MPI_Comm communicator)
 	: SurfaceKernel(id, patch_dim, space_dim, communicator, 1, true)
 #else
 	: SurfaceKernel(id, patch_dim, space_dim, true)
@@ -179,7 +179,7 @@ void SurfUnstructured::setExpert(bool expert)
  */
 int SurfUnstructured::_getDumpVersion() const
 {
-	const int DUMP_VERSION = 4;
+	const int DUMP_VERSION = 5;
 
 	return DUMP_VERSION;
 }
@@ -212,7 +212,7 @@ void SurfUnstructured::_dump(std::ostream &stream) const
 void SurfUnstructured::_restore(std::istream &stream)
 {
 	// Space dimension
-	int spaceDimension;
+	short spaceDimension;
 	utils::binary::read(stream, spaceDimension);
 	setSpaceDimension(spaceDimension);
 

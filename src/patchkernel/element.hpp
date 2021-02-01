@@ -82,7 +82,7 @@ public:
 		}
 	};
 
-	static int getDimension(ElementType type);
+	static short getDimension(ElementType type);
 	static bool isThreeDimensional(ElementType type);
 
 	static int getFaceStreamPosition(const long *connectivity, int face);
@@ -114,7 +114,7 @@ public:
 	void setPID(int pid);
 	int getPID() const;
 
-	int getDimension() const;
+	short getDimension() const;
 	bool isThreeDimensional() const;
 	
 	void setConnect(std::unique_ptr<long[]> &&connect);

@@ -67,7 +67,7 @@ VolUnstructured::VolUnstructured(MPI_Comm communicator)
 
 	\param dimension is the dimension of the patch
 */
-VolUnstructured::VolUnstructured(int dimension)
+VolUnstructured::VolUnstructured(short dimension)
 #if BITPIT_ENABLE_MPI==1
 	: VolUnstructured(dimension, MPI_COMM_NULL)
 {
@@ -80,7 +80,7 @@ VolUnstructured::VolUnstructured(int dimension)
 	\param communicator is the communicator to be used for exchanging data
 	among the processes
 */
-VolUnstructured::VolUnstructured(int dimension, MPI_Comm communicator)
+VolUnstructured::VolUnstructured(short dimension, MPI_Comm communicator)
 	: VolUnstructured(PatchManager::AUTOMATIC_ID, dimension, communicator)
 #else
 	: VolUnstructured(PatchManager::AUTOMATIC_ID, dimension)
@@ -94,7 +94,7 @@ VolUnstructured::VolUnstructured(int dimension, MPI_Comm communicator)
 	\param id is the id of the patch
 	\param dimension is the dimension of the patch
 */
-VolUnstructured::VolUnstructured(int id, int dimension)
+VolUnstructured::VolUnstructured(int id, short dimension)
 #if BITPIT_ENABLE_MPI==1
 	: VolUnstructured(id, dimension, MPI_COMM_NULL)
 {
@@ -108,7 +108,7 @@ VolUnstructured::VolUnstructured(int id, int dimension)
 	\param communicator is the communicator to be used for exchanging data
 	among the processes
 */
-VolUnstructured::VolUnstructured(int id, int dimension, MPI_Comm communicator)
+VolUnstructured::VolUnstructured(int id, short dimension, MPI_Comm communicator)
 	: VolumeKernel(id, dimension, communicator, 1, true)
 #else
 	: VolumeKernel(id, dimension, true)

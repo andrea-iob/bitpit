@@ -93,7 +93,7 @@ PatchKernel::PatchKernel(MPI_Comm communicator, std::size_t haloSize, bool exper
 	\param dimension is the dimension of the patch
 	\param expert if true, the expert mode will be enabled
 */
-PatchKernel::PatchKernel(int dimension, bool expert)
+PatchKernel::PatchKernel(short dimension, bool expert)
 #if BITPIT_ENABLE_MPI==1
     : PatchKernel(dimension, MPI_COMM_NULL, 0, expert)
 {
@@ -113,7 +113,7 @@ PatchKernel::PatchKernel(int dimension, bool expert)
 	cells halo
 	\param expert if true, the expert mode will be enabled
 */
-PatchKernel::PatchKernel(int dimension, MPI_Comm communicator, std::size_t haloSize, bool expert)
+PatchKernel::PatchKernel(short dimension, MPI_Comm communicator, std::size_t haloSize, bool expert)
 #endif
 	: m_expert(expert)
 {
@@ -138,7 +138,7 @@ PatchKernel::PatchKernel(int dimension, MPI_Comm communicator, std::size_t haloS
 	\param dimension is the dimension of the patch
 	\param expert if true, the expert mode will be enabled
 */
-PatchKernel::PatchKernel(int id, int dimension, bool expert)
+PatchKernel::PatchKernel(int id, short dimension, bool expert)
 #if BITPIT_ENABLE_MPI==1
     : PatchKernel(id, dimension, MPI_COMM_NULL, 0, expert)
 {
@@ -159,7 +159,7 @@ PatchKernel::PatchKernel(int id, int dimension, bool expert)
 	cells halo
 	\param expert if true, the expert mode will be enabled
 */
-PatchKernel::PatchKernel(int id, int dimension, MPI_Comm communicator, std::size_t haloSize, bool expert)
+PatchKernel::PatchKernel(int id, short dimension, MPI_Comm communicator, std::size_t haloSize, bool expert)
 #endif
 	: m_expert(expert)
 {
@@ -1266,7 +1266,7 @@ int PatchKernel::getId() const
 
 	\param dimension the dimension of the patch
 */
-void PatchKernel::setDimension(int dimension)
+void PatchKernel::setDimension(short dimension)
 {
 	if (dimension == m_dimension) {
 		return;
@@ -1286,7 +1286,7 @@ void PatchKernel::setDimension(int dimension)
 
 	\return The dimension of the patch.
 */
-int PatchKernel::getDimension() const
+short PatchKernel::getDimension() const
 {
 	return m_dimension;
 }
@@ -2871,7 +2871,7 @@ void PatchKernel::findCellNeighs(long id, std::vector<long> *neighs) const
 	also the neighbours for lower codimensions.
 	\result The neighbours for the specified codimension.
 */
-std::vector<long> PatchKernel::findCellNeighs(long id, int codimension, bool complete) const
+std::vector<long> PatchKernel::findCellNeighs(long id, short codimension, bool complete) const
 {
 	std::vector<long> neighs;
 	findCellNeighs(id, codimension, complete, &neighs);
@@ -2899,7 +2899,7 @@ std::vector<long> PatchKernel::findCellNeighs(long id, int codimension, bool com
 	the neighbours, it is extended by appending all the neighbours found by
 	this function
 */
-void PatchKernel::findCellNeighs(long id, int codimension, bool complete, std::vector<long> *neighs) const
+void PatchKernel::findCellNeighs(long id, short codimension, bool complete, std::vector<long> *neighs) const
 {
 	assert(codimension >= 1 && codimension <= getDimension());
 
@@ -7108,7 +7108,7 @@ void PatchKernel::consecutiveRenumber(long vertexOffset, long cellOffset, long i
  */
 int PatchKernel::getDumpVersion() const
 {
-	const int KERNEL_DUMP_VERSION = 11;
+	const int KERNEL_DUMP_VERSION = 12;
 
 	return (KERNEL_DUMP_VERSION + _getDumpVersion());
 }
@@ -7233,7 +7233,7 @@ void PatchKernel::restore(std::istream &stream, bool reregister)
 	}
 
 	// Dimension
-	int dimension;
+	short dimension;
 	utils::binary::read(stream, dimension);
 	setDimension(dimension);
 

@@ -90,7 +90,7 @@ void Generate2DSurfMesh( bitpit::SurfUnstructured &mesh )
 */
 int subtest_001()
 {
-    int dimensions(2) ;
+    short dimensions(2) ;
 
     // Input geometry
     std::unique_ptr<bitpit::SurfUnstructured> STL( new bitpit::SurfUnstructured(0,1,dimensions) );

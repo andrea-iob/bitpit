@@ -114,7 +114,7 @@ VolOctree::VolOctree(MPI_Comm communicator, std::size_t haloSize)
 	\param length is the length of the domain
 	\param dh is the maximum allowed cell size of the initial refinement
 */
-VolOctree::VolOctree(int dimension, const std::array<double, 3> &origin, double length, double dh)
+VolOctree::VolOctree(short dimension, const std::array<double, 3> &origin, double length, double dh)
 #if BITPIT_ENABLE_MPI==1
 	: VolOctree(dimension, origin, length, dh, MPI_COMM_NULL, 0)
 {
@@ -135,7 +135,7 @@ VolOctree::VolOctree(int dimension, const std::array<double, 3> &origin, double 
 	\param haloSize is the size, expressed in number of layers, of the ghost
 	cells halo
 */
-VolOctree::VolOctree(int dimension, const std::array<double, 3> &origin, double length, double dh, MPI_Comm communicator, std::size_t haloSize)
+VolOctree::VolOctree(short dimension, const std::array<double, 3> &origin, double length, double dh, MPI_Comm communicator, std::size_t haloSize)
 	: VolOctree(PatchManager::AUTOMATIC_ID, dimension, origin, length, dh, communicator, haloSize)
 #else
 	: VolOctree(PatchManager::AUTOMATIC_ID, dimension, origin, length, dh)
@@ -152,7 +152,7 @@ VolOctree::VolOctree(int dimension, const std::array<double, 3> &origin, double 
 	\param length is the length of the domain
 	\param dh is the maximum allowed cell size of the initial refinement
 */
-VolOctree::VolOctree(int id, int dimension, const std::array<double, 3> &origin, double length, double dh)
+VolOctree::VolOctree(int id, short dimension, const std::array<double, 3> &origin, double length, double dh)
 #if BITPIT_ENABLE_MPI==1
 	: VolOctree(id, dimension, origin, length, dh, MPI_COMM_NULL, 0)
 {
@@ -174,7 +174,7 @@ VolOctree::VolOctree(int id, int dimension, const std::array<double, 3> &origin,
 	\param haloSize is the size, expressed in number of layers, of the ghost
 	cells halo
 */
-VolOctree::VolOctree(int id, int dimension, const std::array<double, 3> &origin, double length, double dh, MPI_Comm communicator, std::size_t haloSize)
+VolOctree::VolOctree(int id, short dimension, const std::array<double, 3> &origin, double length, double dh, MPI_Comm communicator, std::size_t haloSize)
 	: VolumeKernel(id, dimension, communicator, haloSize, false)
 #else
 	: VolumeKernel(id, dimension, false)
@@ -487,7 +487,7 @@ void VolOctree::initialize()
 
 	\param dimension the dimension of the patch
 */
-void VolOctree::setDimension(int dimension)
+void VolOctree::setDimension(short dimension)
 {
 	VolumeKernel::setDimension(dimension);
 
@@ -499,7 +499,7 @@ void VolOctree::setDimension(int dimension)
 
 	\param dimension the dimension of the patch
 */
-void VolOctree::__setDimension(int dimension)
+void VolOctree::__setDimension(short dimension)
 {
 	if (m_tree->getDim() > 0 && dimension != m_tree->getDim()) {
 		throw std::runtime_error ("The dimension does not match the dimension of the octree.");
@@ -2476,7 +2476,7 @@ void VolOctree::_findCellNeighs(long id, const std::vector<long> &blackList, std
 {
 	OctantInfo octantInfo = getCellOctant(id);
 
-	int dimension = getDimension();
+	short dimension = getDimension();
 	std::array<uint8_t, 4> nCodimensionItems;
 	nCodimensionItems[0] = 0;
 	nCodimensionItems[1] = m_tree->getNfaces();
@@ -2533,7 +2533,7 @@ void VolOctree::_findCellEdgeNeighs(long id, int edge, const std::vector<long> &
 	const OctantInfo octantInfo = getCellOctant(id);
 
 	// Get edge neighbours
-	int codimension = getDimension() - 1;
+	short codimension = getDimension() - 1;
 	findOctantCodimensionNeighs(octantInfo, edge, codimension, blackList, neighs);
 
 	// Add face neighbours
@@ -2584,7 +2584,7 @@ void VolOctree::_findCellVertexNeighs(long id, int vertex, const std::vector<lon
 	const OctantInfo octantInfo = getCellOctant(id);
 
 	// Get vertex neighbours
-	int codimension = getDimension();
+	short codimension = getDimension();
 	findOctantCodimensionNeighs(octantInfo, vertex, codimension, blackList, neighs);
 
 	// Add edge and face neighbours
@@ -2657,7 +2657,7 @@ void VolOctree::_findCellVertexNeighs(long id, int vertex, const std::vector<lon
 void VolOctree::findOctantCodimensionNeighs(const OctantInfo &octantInfo, int index, int codimension,
                                             const std::vector<long> &blackList, std::vector<long> *neighs) const
 {
-	int dimension = getDimension();
+	short dimension = getDimension();
 	if (codimension > dimension || codimension <= 0) {
 		return;
 	}

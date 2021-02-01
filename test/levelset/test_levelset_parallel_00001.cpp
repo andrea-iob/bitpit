@@ -45,7 +45,7 @@
 */
 int subtest_001(int rank)
 {
-    int dimensions(3);
+    short dimensions(3);
 
     // Input geometry
     std::unique_ptr<bitpit::SurfUnstructured> STL( new bitpit::SurfUnstructured(2, dimensions) );

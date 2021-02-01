@@ -72,7 +72,7 @@ double LevelSetOctree::computeCellIncircle(long id) {
  * @return radius of incircle
  */
 double LevelSetOctree::computeCellCircumcircle( long id ) {
-    int dim = m_octree->getDimension();
+    short dim = m_octree->getDimension();
     return 0.5*sqrt((float) dim)*m_octree->evalCellSize(id);
 }
 
@@ -90,7 +90,7 @@ bool LevelSetOctree::intersectCellPlane( long id, const std::array<double,3> &ro
     std::array<double,3> minPoint( centroid -0.5*spacing );
     std::array<double,3> maxPoint( centroid +0.5*spacing );
 
-    int dim = m_octree->getDimension();
+    short dim = m_octree->getDimension();
     return CGElem::intersectPlaneBox( root, normal, minPoint, maxPoint, dim);
 }
 }

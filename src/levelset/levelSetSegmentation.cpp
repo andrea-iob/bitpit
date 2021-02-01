@@ -440,7 +440,7 @@ double LevelSetSegmentation::getSegmentSize( long id ) const {
 
     const SurfUnstructured &m_surface = m_segmentation->getSurface();
 
-    int spaceDimension = m_surface.getSpaceDimension();
+    short spaceDimension = m_surface.getSpaceDimension();
     if (spaceDimension == 2) {
         return m_surface.evalCellArea(id); //TODO check
     } else if (spaceDimension == 3) {
@@ -508,13 +508,13 @@ bool LevelSetSegmentation::seedNarrowBand( LevelSetCartesian *visitee, std::vect
     VolCartesian                        &mesh = *(static_cast<VolCartesian*>(visitee->getMesh()));
 
     bool                                found(false) ;
-    int                                 dim( mesh.getDimension() ) ;
+    short                               dim( mesh.getDimension() ) ;
     std::array<double,3>                B0, B1;
     std::vector<std::array<double,3>>   VP ;
 
     mesh.getBoundingBox(B0, B1) ;
 
-    for( int i=0; i<dim; ++i){
+    for( short i=0; i<dim; ++i){
         B0[i] -= searchRadius;
         B1[i] += searchRadius;
     }
@@ -615,7 +615,7 @@ void LevelSetSegmentation::computeLSInNarrowBand( LevelSetCartesian *visitee, bo
     double searchRadius = m_narrowBand;
 
     if(searchRadius<0.){
-        for( int d=0; d < mesh.getDimension(); ++d){
+        for( short d=0; d < mesh.getDimension(); ++d){
             searchRadius = std::max( searchRadius, mesh.getSpacing(d) ) ;
         }
     }

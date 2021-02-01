@@ -42,7 +42,7 @@
 */
 int subtest_001(int rank)
 {
-    int dimensions = 3;
+    short dimensions = 3;
 
     // Info
     bitpit::log::cout() << "Testing creating a levelset from an existing tree" << std::endl;

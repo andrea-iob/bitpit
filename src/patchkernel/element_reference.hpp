@@ -44,7 +44,7 @@ public:
     static bool hasInfo(ElementType type);
     static const ReferenceElementInfo & getInfo(ElementType type);
 
-    int dimension;
+    short dimension;
     ElementType type;
 
     int nVertices;

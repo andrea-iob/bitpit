@@ -48,17 +48,17 @@ public:
 	};
 
 	VolCartesian();
-	VolCartesian(int dimension, const std::array<double, 3> &origin,
+	VolCartesian(short dimension, const std::array<double, 3> &origin,
 			   const std::array<double, 3> &lengths, const std::array<int, 3> &nCells);
-	VolCartesian(int id, int dimension, const std::array<double, 3> &origin,
+	VolCartesian(int id, short dimension, const std::array<double, 3> &origin,
 			   const std::array<double, 3> &lengths, const std::array<int, 3> &nCells);
-	VolCartesian(int dimension, const std::array<double, 3> &origin,
+	VolCartesian(short dimension, const std::array<double, 3> &origin,
 			   double length, int nCells1D);
-	VolCartesian(int id, int dimension, const std::array<double, 3> &origin,
+	VolCartesian(int id, short dimension, const std::array<double, 3> &origin,
 			   double length, int nCells1D);
-	VolCartesian(int dimension, const std::array<double, 3> &origin,
+	VolCartesian(short dimension, const std::array<double, 3> &origin,
 			   double length, double dh);
-	VolCartesian(int id, int dimension, const std::array<double, 3> &origin,
+	VolCartesian(int id, short dimension, const std::array<double, 3> &origin,
 			   double length, double dh);
 	VolCartesian(std::istream &stream);
 
