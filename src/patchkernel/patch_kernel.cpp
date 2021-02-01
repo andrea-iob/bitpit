@@ -55,7 +55,7 @@ namespace bitpit {
 */
 PatchKernel::PatchKernel(bool expert)
 #if BITPIT_ENABLE_MPI==1
-    : PatchKernel(MPI_COMM_NULL, 0, expert)
+    : PatchKernel(MPI_COMM_NULL, static_cast<std::size_t>(0), expert)
 {
 }
 
