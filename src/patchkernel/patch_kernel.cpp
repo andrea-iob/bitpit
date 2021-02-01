@@ -95,7 +95,7 @@ PatchKernel::PatchKernel(MPI_Comm communicator, std::size_t haloSize, bool exper
 */
 PatchKernel::PatchKernel(short dimension, bool expert)
 #if BITPIT_ENABLE_MPI==1
-    : PatchKernel(dimension, MPI_COMM_NULL, 0, expert)
+    : PatchKernel(dimension, MPI_COMM_NULL, static_cast<std::size_t>(0), expert)
 {
 }
 
@@ -140,7 +140,7 @@ PatchKernel::PatchKernel(short dimension, MPI_Comm communicator, std::size_t hal
 */
 PatchKernel::PatchKernel(int id, short dimension, bool expert)
 #if BITPIT_ENABLE_MPI==1
-    : PatchKernel(id, dimension, MPI_COMM_NULL, 0, expert)
+    : PatchKernel(id, dimension, MPI_COMM_NULL, static_cast<std::size_t>(0), expert)
 {
 }
 
