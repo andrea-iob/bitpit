@@ -1,134 +1,120 @@
-/*---------------------------------------------------------------------------*\
- *
- *  bitpit
- *
- *  Copyright (C) 2015-2021 OPTIMAD engineering Srl
- *
- *  -------------------------------------------------------------------------
- *  License
- *  This file is part of bitpit.
- *
- *  bitpit is free software: you can redistribute it and/or modify it
- *  under the terms of the GNU Lesser General Public License v3 (LGPL)
- *  as published by the Free Software Foundation.
- *
- *  bitpit is distributed in the hope that it will be useful, but WITHOUT
- *  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
- *  FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
- *  License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with bitpit. If not, see <http://www.gnu.org/licenses/>.
- *
-\*---------------------------------------------------------------------------*/
-
 #if BITPIT_ENABLE_MPI==1
-#   include <mpi.h>
+#include <mpi.h>
 #endif
 
-#include "bitpit_common.hpp"
 #include "bitpit_PABLO.hpp"
-#include "bitpit_IO.hpp"
+#include <vector>
 
-using namespace std;
-using namespace bitpit;
+#include "DataCommInterface.hpp"
 
-/*!
-* Subtest 001
-*
-* Testing refinement and coarsening.
-*/
-int subtest_001()
+class UserDataLB : public bitpit::DataLBInterface<UserDataLB>{
+public:
+  static constexpr int N = 300;
+  struct Data{
+    int a;
+    double b[N];
+  };
+
+  std::vector<Data>& data, ghostdata;
+
+  size_t fixedSize() const
+  {
+    return sizeof(int) + N*sizeof(double);
+  }
+  //size_t size(const uint32_t e) const;
+  void move(const uint32_t from, const uint32_t to)
+  {
+    data[to] = data[from];
+  }
+
+  template<class Buffer>
+  void gather(Buffer & buff, const uint32_t e)
+  {
+    buff << data[e].a;
+    for(int i=0; i<N; i++)
+      buff << data[e].b[i];
+  }
+
+  template<class Buffer>
+  void scatter(Buffer & buff, const uint32_t e)
+  {
+    buff >> data[e].a;
+    for(int i=0; i<N; i++)
+      buff >> data[e].b[i];
+  }
+
+  void assign(uint32_t stride, uint32_t length)
+  {
+    for(int i=0; i<length; i++)
+      data[i] = data[i+stride];
+  }
+  void resize(uint32_t newSize)
+  {
+    data.resize(newSize);
+  }
+  void resizeGhost(uint32_t newSize)
+  {
+    ghostdata.resize(newSize);
+  }
+  void shrink() {}
+
+  UserDataLB(std::vector<Data>& data_, std::vector<Data>& ghostdata_)
+    : data(data_), ghostdata(ghostdata_)
+  {}
+
+  ~UserDataLB(){}
+};
+
+/**
+ * Run the example.
+ */
+void run(int rank)
 {
-	/**<Instantation of a 2D para_tree object.*/
-	ParaTree pablo(2);
+    /**<Instantation of a 3D pablo uniform object.*/
+    bitpit::PabloUniform pablo11(3);
+    /**<Set 2:1 balance for the octree.*/
+    int idx = 0;
+    pablo11.setBalance(idx,true);
 
-    /**<Set 2:1 balance only through faces.*/
-    pablo.setBalanceCodimension(1);
-    uint32_t idx=0;
-    pablo.setBalance(idx,true);
+    /** Set Periodic boundary conditions */
+    pablo11.setPeriodic(0);
+    pablo11.setPeriodic(2);
+    pablo11.setPeriodic(4);
 
-    /**<Compute the connectivity and write the para_tree.*/
-    pablo.computeConnectivity();
-    pablo.write("Pablo003_iter0");
+    /**<Compute the connectivity and write the octree.*/
+    pablo11.computeConnectivity();
 
-    /**<Refine globally two level and write the para_tree.*/
-    for (int iter=1; iter<3; iter++){
-        pablo.adaptGlobalRefine();
-        pablo.updateConnectivity();
-        pablo.write("Pablo003_iter"+to_string(static_cast<unsigned long long>(iter)));
+    /**<Refine globally one level and write the octree.*/
+    pablo11.adaptGlobalRefine();
+    pablo11.adaptGlobalRefine();
+    pablo11.adaptGlobalRefine();
+
+    pablo11.setMarker(10,1);
+    pablo11.setMarker(15,-1);
+
+    pablo11.adapt();
+
+    assert( !pablo11.checkToAdapt() );
+
+    uint8_t levels = 6;
+    pablo11.loadBalance(levels);
+
+    if( rank==0 )
+    {
+      pablo11.setMarker(10,1);
     }
-
-    /**<Define a center point and a radius.*/
-    double xc, yc;
-    xc = yc = 0.5;
-    double radius = 0.4;
-
-    /**<Simple adapt() [refine] 6 times the octants with at least one node inside the circle.*/
-    int fiter;
-    for (int iter=3; iter<9; iter++){
-        uint32_t nocts = pablo.getNumOctants();
-        for (unsigned int i=0; i<nocts; i++){
-            /**<Compute the nodes of the octant.*/
-            vector<array<double,3> > nodes = pablo.getNodes(i);
-            for (int j=0; j<4; j++){
-                double x = nodes[j][0];
-                double y = nodes[j][1];
-                if ((pow((x-xc),2.0)+pow((y-yc),2.0) <= pow(radius,2.0))){
-                    pablo.setMarker(i, 1);
-                }
-            }
-        }
-        /**<Adapt octree.*/
-        pablo.adapt();
-
-        /**<Update the connectivity and write the para_tree.*/
-        pablo.updateConnectivity();
-        pablo.write("Pablo003_iter"+to_string(static_cast<unsigned long long>(iter)));
+    if( rank==2 )
+    {
+      pablo11.setMarker(15,-1);
     }
+    pablo11.adapt();
+    assert( !pablo11.checkToAdapt() );
 
-    /**<Simple adapt() [coarse] 3 times the octants with at least one node inside the 2nd circle.*/
-    /**<Define a center point and a radius.*/
-    double xc2, yc2;
-    xc2 = yc2 = 0.5;
-    double radius2 = 0.2;
-    for (int iter=9; iter<12; iter++){
-        uint32_t nocts = pablo.getNumOctants();
-        for (unsigned int i=0; i<nocts; i++){
-            /**<Compute the nodes of the octant.*/
-            vector<array<double,3> > nodes = pablo.getNodes(i);
-            for (int j=0; j<4; j++){
-                double x = nodes[j][0];
-                double y = nodes[j][1];
-                if ((pow((x-xc2),2.0)+pow((y-yc2),2.0) <= pow(radius2,2.0))){
-                    pablo.setMarker(i, -1);
-                }
-            }
-            if (iter == 11) pablo.setBalance(i,false);
-        }
-        /**<Adapt octree.*/
-        pablo.adapt();
-
-        /**<Update the connectivity and write the para_tree.*/
-        pablo.updateConnectivity();
-        pablo.write("Pablo003_iter"+to_string(static_cast<unsigned long long>(iter)));
-        fiter = iter;
+    {
+      std::vector<UserDataLB::Data> oct_data(pablo11.getNumOctants()), ghost_data(pablo11.getNumGhosts());
+      UserDataLB data_lb(oct_data,ghost_data);
+      pablo11.loadBalance(data_lb, levels);
     }
-
-
-    uint32_t nocts = pablo.getNumOctants();
-    for (unsigned int i=0; i<nocts; i++){
-        pablo.setBalance(i,true);
-    }
-
-    /**<Adapt octree.*/
-    pablo.adapt();
-
-    /**<Update the connectivity and write the para_tree.*/
-    pablo.updateConnectivity();
-    pablo.write("Pablo003_iter"+to_string(static_cast<unsigned long long>(fiter+1)));
-
-    return 0;
 }
 
 /*!
@@ -154,21 +140,15 @@ int main(int argc, char *argv[])
 #endif
 
     // Initialize the logger
-    log::manager().initialize(log::SEPARATE, false, nProcs, rank);
-    log::cout() << fileVerbosity(log::NORMAL);
-    log::cout() << consoleVerbosity(log::QUIET);
+    bitpit::log::manager().initialize(bitpit::log::SEPARATE, false, nProcs, rank);
+    bitpit::log::cout() << fileVerbosity(bitpit::log::NORMAL);
+    bitpit::log::cout() << consoleVerbosity(bitpit::log::QUIET);
 
-    // Run the subtests
-    log::cout() << "Testing basic octree features" << std::endl;
-
-    int status;
+    // Run the example
     try {
-        status = subtest_001();
-        if (status != 0) {
-            return status;
-        }
+        run(rank);
     } catch (const std::exception &exception) {
-        log::cout() << exception.what();
+        bitpit::log::cout() << exception.what();
         exit(1);
     }
 
