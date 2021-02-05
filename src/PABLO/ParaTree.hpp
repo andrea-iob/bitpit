@@ -917,7 +917,6 @@ namespace bitpit {
                     const std::array<uint32_t, 2> &recvRange = recvRanges.at(senderRank);
                     uint32_t beginRecvIdx = recvRange[0];
                     uint32_t endRecvIdx   = recvRange[1];
-                    assert((endRecvIdx - beginRecvIdx) == (recvBuffer.getSize() / Octant::getBinarySize()));
 
                     for (uint32_t i = beginRecvIdx; i < endRecvIdx; ++i) {
                         recvBuffer >> m_octree.m_octants[i];
