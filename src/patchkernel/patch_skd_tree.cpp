@@ -631,6 +631,13 @@ void SkdNode::updatePointClosestCell(const std::array<double, 3> &point, const C
     std::array<double, 3> cellProjection;
     cell.evalPointProjection(point, cellVertexCoordinates, &cellProjection, &cellDistance);
 
+
+//     std::cout << std::setprecision(16) << std::endl;
+//     std::cout << " point " << point << std::endl;
+//     std::cout << " cellId " << cellId << std::endl;
+//     std::cout << " cellDistance " << cellDistance << std::endl;
+//     std::cout << " cellProjection " << cellProjection << std::endl;
+
     // Detect if the specified cell is closer than the current closest cell
     const int DISTANCE_CLOSER  = - 1;
     const int DISTANCE_EQUAL   =   0;
@@ -642,6 +649,9 @@ void SkdNode::updatePointClosestCell(const std::array<double, 3> &point, const C
     } else if (cellDistance < *closestDistance) {
         distanceFlag = DISTANCE_CLOSER;
     }
+
+//     std::cout << " distanceType " << distanceFlag << std::endl;
+
 
     // Consider the case where no closest cell is defined
     //
