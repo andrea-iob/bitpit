@@ -50,6 +50,7 @@ unset(TESTS)
 add_custom_command(
     TARGET "test_levelset_00002" PRE_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/data/cube.stl" "${CMAKE_CURRENT_BINARY_DIR}/data/cube.stl"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/data/extracted.2.ascii.stl" "${CMAKE_CURRENT_BINARY_DIR}/data/extracted.2.ascii.stl"
 )
 
 add_custom_command(
