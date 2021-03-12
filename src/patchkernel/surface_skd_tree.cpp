@@ -352,6 +352,10 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
 long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, double maxDistance,
                                           bool interiorCellsOnly, long *id, double *distance) const
 {
+    // Tolerance for distance evaluations
+    const PatchKernel &patch = getPatch();
+    double tolerance = patch.getTol();
+
     // Initialize the cell id
     *id = Cell::NULL_ID;
 
@@ -379,7 +383,7 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
         // Do not consider nodes with a minimum distance greater than
         // the distance estimate
         double nodeMinDistance = node.evalPointMinDistance(point);
-        if (nodeMinDistance > *distance) {
+        if (nodeMinDistance > (*distance + tolerance)) {
             continue;
         }
 
@@ -413,7 +417,7 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
     for (std::size_t k = 0; k < m_candidateIds.size(); ++k) {
         // Do not consider nodes with a minimum distance greater than
         // the distance estimate
-        if (m_candidateMinDistances[k] > *distance) {
+        if (m_candidateMinDistances[k] > (*distance + tolerance)) {
             continue;
         }
 
