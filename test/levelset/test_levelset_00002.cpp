@@ -31,6 +31,7 @@
 #endif
 
 // bitpit
+# include "bitpit_CG.hpp"
 # include "bitpit_surfunstructured.hpp"
 # include "bitpit_volcartesian.hpp"
 # include "bitpit_levelset.hpp"
@@ -44,6 +45,119 @@ int subtest_001()
 {
     int dimensions(3) ;
 
+
+    double distance;
+    std::array<double, 3> projection;
+
+    std::array<double, 3> point = {{56.925, 50.715, -100.567}};
+    std::array<std::array<double, 3>, 3> vertexCoordinates;
+
+    std::array<double, 3> lambda;
+
+
+    vertexCoordinates[0] = {{55.2, 50.6, -100.841}};
+    vertexCoordinates[1] = {{55.2, 50.6, -101.2}};
+    vertexCoordinates[2] = {{55.2, 51.2504, -100.93}};
+
+    projection = bitpit::CGElem::projectPointTriangle(point, vertexCoordinates[0], vertexCoordinates[1], vertexCoordinates[2]);
+    distance   = norm2(point - projection);
+
+    std::cout << "    point > " << point << std::endl;
+    std::cout << "    V0 > " << vertexCoordinates[0] << std::endl;
+    std::cout << "    V1 > " << vertexCoordinates[1] << std::endl;
+    std::cout << "    V2 > " << vertexCoordinates[2] << std::endl;
+    std::cout << "    lambda > " << lambda << std::endl;
+    std::cout << "    distance > " << distance << std::endl;
+    std::cout << "    projection > " << projection << std::endl;
+
+
+
+    vertexCoordinates[0] = {{55.2, 50.6, -100.841}};
+    vertexCoordinates[1] = {{55.2, 50.6, -101.2}};
+    vertexCoordinates[2] = {{55.2, 51.2504, -100.93}};
+
+    distance = bitpit::CGElem::distancePointTriangle(point, vertexCoordinates[0], vertexCoordinates[1], vertexCoordinates[2], lambda);
+    projection = bitpit::CGElem::reconstructPointFromBarycentricTriangle(vertexCoordinates[0], vertexCoordinates[1], vertexCoordinates[2], lambda);
+
+
+    std::cout << "    point > " << point << std::endl;
+    std::cout << "    V0 > " << vertexCoordinates[0] << std::endl;
+    std::cout << "    V1 > " << vertexCoordinates[1] << std::endl;
+    std::cout << "    V2 > " << vertexCoordinates[2] << std::endl;
+    std::cout << "    lambda > " << lambda << std::endl;
+    std::cout << "    distance > " << distance << std::endl;
+    std::cout << "    projection > " << projection << std::endl;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    vertexCoordinates[0] = {{55.2, 50.6, -100.841}};
+    vertexCoordinates[1] = {{55.2, 51.2504, -100.93}};
+    vertexCoordinates[2] = {{54.3115, 51.4885, -101.2}};
+
+    projection = bitpit::CGElem::projectPointTriangle(point, vertexCoordinates[0], vertexCoordinates[1], vertexCoordinates[2]);
+    distance   = norm2(point - projection);
+
+    std::cout << "    point > " << point << std::endl;
+    std::cout << "    V0 > " << vertexCoordinates[0] << std::endl;
+    std::cout << "    V1 > " << vertexCoordinates[1] << std::endl;
+    std::cout << "    V2 > " << vertexCoordinates[2] << std::endl;
+    std::cout << "    lambda > " << lambda << std::endl;
+    std::cout << "    distance > " << distance << std::endl;
+    std::cout << "    projection > " << projection << std::endl;
+
+
+
+    vertexCoordinates[0] = {{55.2, 50.6, -100.841}};
+    vertexCoordinates[1] = {{55.2, 51.2504, -100.93}};
+    vertexCoordinates[2] = {{54.3115, 51.4885, -101.2}};
+
+
+    distance = bitpit::CGElem::distancePointTriangle(point, vertexCoordinates[0], vertexCoordinates[1], vertexCoordinates[2], lambda);
+    projection = bitpit::CGElem::reconstructPointFromBarycentricTriangle(vertexCoordinates[0], vertexCoordinates[1], vertexCoordinates[2], lambda);
+
+
+    std::cout << "    point > " << point << std::endl;
+    std::cout << "    V0 > " << vertexCoordinates[0] << std::endl;
+    std::cout << "    V1 > " << vertexCoordinates[1] << std::endl;
+    std::cout << "    V2 > " << vertexCoordinates[2] << std::endl;
+    std::cout << "    lambda > " << lambda << std::endl;
+    std::cout << "    distance > " << distance << std::endl;
+    std::cout << "    projection > " << projection << std::endl;
+
+
+
+//     exit(0);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Input geometry
 #if BITPIT_ENABLE_MPI
     std::unique_ptr<bitpit::SurfUnstructured> STL( new bitpit::SurfUnstructured(2, 3, MPI_COMM_NULL) );
@@ -53,9 +167,8 @@ int subtest_001()
 
     bitpit::log::cout()<< " - Loading stl geometry" << std::endl;
 
-    STL->importSTL("./data/cube.stl", true);
+    STL->importSTL("./data/extracted.2.ascii.stl", bitpit::STLReader::FormatUnknown, true);
 
-    STL->deleteCoincidentVertices() ;
     STL->initializeAdjacencies() ;
 
     STL->getVTK().setName("geometry_002") ;
@@ -78,17 +191,20 @@ int subtest_001()
 
     delta = meshMax -meshMin ;
 
-    bitpit::VolCartesian mesh( 1, dimensions, meshMin, delta, nc);
+    std::array<double, 3> origin = {{42., 12., 76.}};
+    std::array<double, 3> length = {{18., 18., 18.}};
+    std::array<int, 3> nnnn = {{18, 18, 18}};
+
+    bitpit::VolCartesian mesh( 1, dimensions, origin, length, nnnn);
     mesh.update() ;
     mesh.initializeAdjacencies() ;
-    mesh.initializeInterfaces() ;
 
     // Compute level set  in narrow band
     bitpit::LevelSet levelset ;
     std::chrono::time_point<std::chrono::system_clock> start, end;
 
     levelset.setMesh(&mesh) ;
-    int id0 = levelset.addObject( std::move(STL), BITPIT_PI/3. ) ;
+    int id0 = levelset.addObject( std::move(STL), BITPIT_PI/8. ) ;
 
     levelset.setPropagateSign(true) ;
     start = std::chrono::system_clock::now();
