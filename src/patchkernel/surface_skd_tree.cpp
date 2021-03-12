@@ -355,6 +355,7 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
     // Tolerance for distance evaluations
     const PatchKernel &patch = getPatch();
     double tolerance = patch.getTol();
+    double squareTolerance = tolerance * tolerance;
 
     // Initialize the cell id
     *id = Cell::NULL_ID;
@@ -364,7 +365,7 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
     // The real distance will be lesser than or equal to the estimate.
     std::size_t rootId = 0;
     const SkdNode &root = m_nodes[rootId];
-    *distance = std::min(root.evalPointMaxDistance(point), maxDistance);
+    double maxSquareDistance = std::min(root.evalPointMaxSquareDistance(point), maxDistance * maxDistance);
 
     // Get a list of candidates nodes
     //
@@ -382,8 +383,8 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
 
         // Do not consider nodes with a minimum distance greater than
         // the distance estimate
-        double nodeMinDistance = node.evalPointMinDistance(point);
-        if (nodeMinDistance > (*distance + tolerance)) {
+        double nodeMinSquareDistance = node.evalPointMinSquareDistance(point);
+        if (nodeMinSquareDistance > (maxSquareDistance + squareTolerance)) {
             continue;
         }
 
@@ -391,8 +392,8 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
         //
         // The real distance will be lesser than or equal to the
         // estimate.
-        double nodeMaxDistance = node.evalPointMaxDistance(point);
-        *distance = std::min(nodeMaxDistance, *distance);
+        double nodeMaxSquareDistance = node.evalPointMaxSquareDistance(point);
+        maxSquareDistance = std::min(nodeMaxSquareDistance, maxSquareDistance);
 
         // If the node is a leaf add it to the candidates, otherwise
         // add its children to the stack.
@@ -408,9 +409,10 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
 
         if (isLeaf) {
             m_candidateIds.push_back(nodeId);
-            m_candidateMinDistances.push_back(nodeMinDistance);
+            m_candidateMinDistances.push_back(std::sqrt(nodeMinSquareDistance));
         }
     }
+    *distance = std::sqrt(maxSquareDistance);
 
     // Process the candidates and find the closest cell
     long nDistanceEvaluations = 0;
