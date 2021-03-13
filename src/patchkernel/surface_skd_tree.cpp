@@ -359,12 +359,12 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
     // Initialize the cell id
     *id = Cell::NULL_ID;
 
-    // Initialize the distance with an estimate
+    // Initialize a distance estimate
     //
     // The real distance will be lesser than or equal to the estimate.
     std::size_t rootId = 0;
     const SkdNode &root = m_nodes[rootId];
-    double maxSquareDistance = std::min(root.evalPointMaxSquareDistance(point), maxDistance * maxDistance);
+    double squareDistanceEstimate = std::min(root.evalPointMaxSquareDistance(point), maxDistance * maxDistance);
 
     // Get a list of candidates nodes
     //
@@ -390,7 +390,7 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
         // Do not consider nodes with a minimum distance greater than
         // the distance estimate
         double nodeMinSquareDistance = node.evalPointMinSquareDistance(point);
-        if (nodeMinSquareDistance > (maxSquareDistance + squareTolerance)) {
+        if (nodeMinSquareDistance > (squareDistanceEstimate + squareTolerance)) {
             continue;
         }
 
@@ -399,7 +399,7 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
         // The real distance will be lesser than or equal to the
         // estimate.
         double nodeMaxSquareDistance = node.evalPointMaxSquareDistance(point);
-        maxSquareDistance = std::min(nodeMaxSquareDistance, maxSquareDistance);
+        squareDistanceEstimate = std::min(nodeMaxSquareDistance, squareDistanceEstimate);
 
         // If the node is a leaf add it to the candidates, otherwise
         // add its children to the stack.
@@ -418,10 +418,11 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
             m_candidateMinDistances.push_back(std::sqrt(nodeMinSquareDistance));
         }
     }
-    *distance = std::sqrt(maxSquareDistance);
 
     // Process the candidates and find the closest cell
     long nDistanceEvaluations = 0;
+
+    *distance = std::sqrt(squareDistanceEstimate);
     for (std::size_t k = 0; k < m_candidateIds.size(); ++k) {
         // Do not consider nodes with a minimum distance greater than
         // the distance estimate
