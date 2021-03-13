@@ -232,40 +232,47 @@ const std::array<double, 3> & SkdBox::getBoxMax() const
 
 
 /*!
-* Evaluates the minimum distance between the specified point and the box.
+* Evaluates the minimum distance between the specified point and the box
+* inflated by the given offset.
 *
 * \param point is the point
-* \result The minimum distance between the specified point and the box.
+* \param offset is the offset that will be used to expand the box
+* \result The minimum distance between the specified point and the box
+* inflated by the given offset.
 */
-double SkdBox::evalPointMinDistance(const std::array<double, 3> &point) const
+double SkdBox::evalPointMinDistance(const std::array<double, 3> &point, double offset) const
 {
-    return std::sqrt(evalPointMinSquareDistance(point));
+    return std::sqrt(evalPointMinSquareDistance(point, offset));
 }
 
 /*!
-* Evaluates the maximum distance between the specified point and the box.
+* Evaluates the maximum distance between the specified point and the box
+* inflated by the given offset.
 *
 * \param point is the point
-* \result The maximum distance between the specified point and the box.
+* \param offset is the offset that will be used to expand the box
+* \result The maximum distance between the specified point and the box
+* inflated by the given offset.
 */
-double SkdBox::evalPointMaxDistance(const std::array<double, 3> &point) const
+double SkdBox::evalPointMaxDistance(const std::array<double, 3> &point, double offset) const
 {
-    return std::sqrt(evalPointMaxSquareDistance(point));
+    return std::sqrt(evalPointMaxSquareDistance(point, offset));
 }
 
 /*!
 * Evaluates the square of the minimum distance between the specified point and
-* the box.
+* the box inflated by the given offset.
 *
 * \param point is the point
+* \param offset is the offset that will be used to expand the box
 * \result The square of the minimum distance between the specified point and
-* the box.
+* the box inflated by the given offset.
 */
-double SkdBox::evalPointMinSquareDistance(const std::array<double, 3> &point) const
+double SkdBox::evalPointMinSquareDistance(const std::array<double, 3> &point, double offset) const
 {
     double squareDistance = 0.;
     for (int d = 0; d < 3; ++d) {
-        squareDistance += std::pow(std::max({0., m_boxMin[d] - point[d], point[d] - m_boxMax[d]}), 2);
+        squareDistance += std::pow(std::max({0., m_boxMin[d] - offset - point[d], point[d] - m_boxMax[d] - offset}), 2);
     }
 
     return squareDistance;
@@ -273,17 +280,18 @@ double SkdBox::evalPointMinSquareDistance(const std::array<double, 3> &point) co
 
 /*!
 * Evaluates the square of the maximum distance between the specified point and
-* the box.
+* the box inflated by the given offset.
 *
 * \param point is the point
+* \param offset is the offset that will be used to expand the box
 * \result The square of the maximum distance between the specified point and
-* the box.
+* the box inflated by the given offset.
 */
-double SkdBox::evalPointMaxSquareDistance(const std::array<double, 3> &point) const
+double SkdBox::evalPointMaxSquareDistance(const std::array<double, 3> &point, double offset) const
 {
     double squareDistance = 0.;
     for (int d = 0; d < 3; ++d) {
-        squareDistance += std::pow(std::max(point[d] - m_boxMin[d], m_boxMax[d] - point[d]), 2);
+        squareDistance += std::pow(std::max(point[d] - m_boxMin[d] + offset, m_boxMax[d] + offset - point[d]), 2);
     }
 
     return squareDistance;

@@ -73,11 +73,11 @@ public:
     const std::array<double, 3> & getBoxMin() const;
     const std::array<double, 3> & getBoxMax() const;
 
-    double evalPointMinDistance(const std::array<double, 3> &point) const;
-    double evalPointMaxDistance(const std::array<double, 3> &point) const;
+    double evalPointMinDistance(const std::array<double, 3> &point, double offset = 0.) const;
+    double evalPointMaxDistance(const std::array<double, 3> &point, double offset = 0.) const;
 
-    double evalPointMinSquareDistance(const std::array<double, 3> &point) const;
-    double evalPointMaxSquareDistance(const std::array<double, 3> &point) const;
+    double evalPointMinSquareDistance(const std::array<double, 3> &point, double offset = 0.) const;
+    double evalPointMaxSquareDistance(const std::array<double, 3> &point, double offset = 0.) const;
 
     bool boxContainsPoint(const std::array<double,3> &point, double offset) const;
     bool boxIntersectsSphere(const std::array<double,3> &center, double radius) const;
