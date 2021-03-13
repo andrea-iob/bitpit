@@ -330,9 +330,8 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
 }
 
 /*!
-* Given the specified point find the closest cell contained in the
-* three and evaluates the distance between that cell and the given
-* point.
+* Given the specified point find the closest cell contained in the tree and
+* evaluate the distance between that cell and the given point.
 *
 * \param[in] point is the point
 * \param[in] maxDistance all cells whose distance is greater than
@@ -371,6 +370,13 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
     //
     // Some temporary data structures are memeber of the class to avoid
     // their reallocation every time the function is called.
+    //
+    // First, we gather all the candidates and then we evaluate the distance
+    // of each candidate. Since distance estimate is constantly updated when
+    // new nodes are processed, the final estimate may be smaller than the
+    // minimum distance of some candidates. Processing the candidates after
+    // scanning all the tree, allowe to discard some of them without the need
+    // of evaluating the exact distance.
     m_nodeStack.clear();
     m_candidateIds.clear();
     m_candidateMinDistances.clear();
