@@ -368,14 +368,14 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
 
     // Get a list of candidates nodes
     //
-    // Some temporary data structures are memeber of the class to avoid
+    // Some temporary data structures are member of the class to avoid
     // their reallocation every time the function is called.
     //
     // First, we gather all the candidates and then we evaluate the distance
     // of each candidate. Since distance estimate is constantly updated when
     // new nodes are processed, the final estimate may be smaller than the
     // minimum distance of some candidates. Processing the candidates after
-    // scanning all the tree, allowe to discard some of them without the need
+    // scanning all the tree, allows to discard some of them without the need
     // of evaluating the exact distance.
     m_nodeStack.clear();
     m_candidateIds.clear();
@@ -403,8 +403,8 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
             squareInflatedDistanceEstimate = std::pow(std::sqrt(squareDistanceEstimate) + tolerance, 2);
         }
 
-        // If the node is a leaf add it to the candidates, otherwise
-        // add its children to the stack.
+        // If the node is a leaf add it to the candidates, otherwise add its
+        // children to the stack.
         bool isLeaf = true;
         for (int i = SkdNode::CHILD_BEGIN; i != SkdNode::CHILD_END; ++i) {
             SkdNode::ChildLocation childLocation = static_cast<SkdNode::ChildLocation>(i);
@@ -426,8 +426,8 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
 
     *distance = std::sqrt(squareDistanceEstimate);
     for (std::size_t k = 0; k < m_candidateIds.size(); ++k) {
-        // Do not consider nodes with a minimum distance greater than
-        // the distance estimate
+        // Do not consider nodes with a minimum distance greater than the
+        // distance estimate
         if (m_candidateMinDistances[k] > (*distance + tolerance)) {
             continue;
         }
