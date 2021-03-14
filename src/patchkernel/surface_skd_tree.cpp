@@ -364,8 +364,8 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
     std::size_t rootId = 0;
     const SkdNode &root = m_nodes[rootId];
     double distanceEstimate = std::min(root.evalPointMaxDistance(point), maxDistance);
-    double inflatedDistanceEstimate = distanceEstimate + tolerance;
-    double squareInflatedDistanceEstimate = std::pow(inflatedDistanceEstimate, 2);
+    double squareDistanceEstimate = std::pow(distanceEstimate, 2);
+    double squareInflatedDistanceEstimate = std::pow(distanceEstimate + tolerance, 2);
 
     // Get a list of candidates nodes
     //
@@ -398,10 +398,11 @@ long SurfaceSkdTree::findPointClosestCell(const std::array<double, 3> &point, do
         // Update the distance estimate
         //
         // The real distance will be lesser than or equal to the estimate.
-        double nodeMaxDistance = node.evalPointMaxDistance(point);
-        distanceEstimate = std::min(nodeMaxDistance, inflatedDistanceEstimate);
-        inflatedDistanceEstimate = distanceEstimate + tolerance;
-        squareInflatedDistanceEstimate = std::pow(inflatedDistanceEstimate, 2);
+        double nodeMaxSquareDistance = node.evalPointMaxSquareDistance(point);
+        if (nodeMaxSquareDistance < squareDistanceEstimate) {
+            distanceEstimate = std::sqrt(squareDistanceEstimate);
+            squareInflatedDistanceEstimate = std::pow(distanceEstimate + tolerance, 2);
+        }
 
         // If the node is a leaf add it to the candidates, otherwise
         // add its children to the stack.
