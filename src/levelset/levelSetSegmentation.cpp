@@ -672,6 +672,7 @@ void LevelSetSegmentation::computeLSInNarrowBand( LevelSetCartesian *visitee, bo
     // segments or the intersection between the segments and the bounding box
     // of the patch.
     std::unordered_set<long> processList;
+    std::unordered_set<long> alreadyProcessed;
 
     std::vector<std::array<double,3>> intersectionPoints;
     std::vector<std::array<double,3>> segmentVertexCoords;
@@ -687,6 +688,8 @@ void LevelSetSegmentation::computeLSInNarrowBand( LevelSetCartesian *visitee, bo
         // Add to the process list the cells that contain the vertices of the
         // segment or the intersection between the segment and the bounding box
         // of the patch.
+        processList.clear();
+
         int nInnerVertices = 0;
         for (const std::array<double,3> &vertexPoint : segmentVertexCoords) {
             long cellId = mesh.locatePoint(vertexPoint);
@@ -707,53 +710,52 @@ void LevelSetSegmentation::computeLSInNarrowBand( LevelSetCartesian *visitee, bo
                 }
             }
         }
-    }
 
-    // Evaluate the levelset within the narrow band
-    //
-    // The initial process list is gradually expanded considering all the
-    // neighbours with a distance less than the search radius.
-    std::unordered_set<long> alreadyProcessed;
-    while (!processList.empty()) {
-        // Get the cell to process
-        long cellId = *(processList.begin());
-        processList.erase(cellId);
-        alreadyProcessed.insert(cellId);
+        // Evaluate the levelset within the narrow band
+        //
+        // The initial process list is gradually expanded considering all the
+        // neighbours with a distance less than the search radius.
+        while (!processList.empty()) {
+            // Get the cell to process
+            long cellId = *(processList.begin());
+            processList.erase(cellId);
+            alreadyProcessed.insert(cellId);
 
-        // Find segment associated to the cell
-        std::array<double,3> cellCentroid = visitee->computeCellCentroid(cellId);
+            // Find segment associated to the cell
+            std::array<double,3> cellCentroid = visitee->computeCellCentroid(cellId);
 
-        long segmentId;
-        double distance;
-        m_segmentation->getSearchTree().findPointClosestCell(cellCentroid, searchRadius, &segmentId, &distance);
-        if(segmentId < 0){
-            continue;
-        }
+            long segmentId;
+            double distance;
+            m_segmentation->getSearchTree().findPointClosestCell(cellCentroid, searchRadius, &segmentId, &distance);
+            if(segmentId < 0){
+                continue;
+            }
 
-        // Evaluate levelset information
-        std::array<double, 3> gradient;
-        std::array<double, 3> normal;
-        int error = m_segmentation->getSegmentInfo(cellCentroid, segmentId, signd, distance, gradient, normal);
-        if (error) {
-            throw std::runtime_error ("Unable to extract the levelset information from segment.");
-        }
+            // Evaluate levelset information
+            std::array<double, 3> gradient;
+            std::array<double, 3> normal;
+            int error = m_segmentation->getSegmentInfo(cellCentroid, segmentId, signd, distance, gradient, normal);
+            if (error) {
+                throw std::runtime_error ("Unable to extract the levelset information from segment.");
+            }
 
-        PiercedVector<LevelSetInfo>::iterator lsInfoItr = m_ls.emplace(cellId) ;
-        lsInfoItr->value    = distance;
-        lsInfoItr->gradient = gradient;
+            PiercedVector<LevelSetInfo>::iterator lsInfoItr = m_ls.emplace(cellId) ;
+            lsInfoItr->value    = distance;
+            lsInfoItr->gradient = gradient;
 
-        PiercedVector<SurfaceInfo>::iterator infoItr = m_surfaceInfo.emplace(cellId);
-        infoItr->support = segmentId;
-        infoItr->normal = normal;
+            PiercedVector<SurfaceInfo>::iterator infoItr = m_surfaceInfo.emplace(cellId);
+            infoItr->support = segmentId;
+            infoItr->normal = normal;
 
-        // Add cell neighbours to the process list
-        const Cell &cell = mesh.getCell(cellId);
-        const long *neighbours = cell.getAdjacencies() ;
-        int nNeighbours = cell.getAdjacencyCount() ;
-        for (int n = 0; n < nNeighbours; ++n) {
-            long neighId = neighbours[n];
-            if (alreadyProcessed.count(neighId) == 0) {
-                processList.insert(neighId);
+            // Add cell neighbours to the process list
+            const Cell &cell = mesh.getCell(cellId);
+            const long *neighbours = cell.getAdjacencies() ;
+            int nNeighbours = cell.getAdjacencyCount() ;
+            for (int n = 0; n < nNeighbours; ++n) {
+                long neighId = neighbours[n];
+                if (alreadyProcessed.count(neighId) == 0) {
+                    processList.insert(neighId);
+                }
             }
         }
     }
