@@ -697,7 +697,9 @@ void LevelSetSegmentation::computeLSInNarrowBand( LevelSetCartesian *visitee, bo
                 continue;
             }
 
-            processList.insert(cellId);
+            if (alreadyProcessed.count(cellId) == 0) {
+                processList.insert(cellId);
+            }
             ++nInnerVertices;
         }
 
@@ -705,8 +707,9 @@ void LevelSetSegmentation::computeLSInNarrowBand( LevelSetCartesian *visitee, bo
             if (CGElem::intersectBoxPolygon(meshMinPoint, meshMaxPoint, segmentVertexCoords, false, true, true, intersectionPoints, meshDimension)) {
                 for (const std::array<double,3> &intersectionPoint : intersectionPoints){
                     long cellId = mesh.locateClosestCell(intersectionPoint);
-                    assert(cellId >= 0);
-                    processList.insert(cellId);
+                    if (alreadyProcessed.count(cellId) == 0) {
+                        processList.insert(cellId);
+                    }
                 }
             }
         }
